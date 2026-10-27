@@ -89,7 +89,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 7. A failing feed (mocked 404 or timeout) is recorded in `sources.last_error` while other feeds are still ingested.
 8. After a run, every new item has a 512-dimension embedding and `embedding_model` set.
 9. `pnpm ingest` prints a per-source summary: fetched, new, skipped (not modified), errors.
-10. The cross-lingual check reports a clearly higher average similarity for matched pairs than for random pairs.
+10. The cross-lingual check passes: at least 9 of 10 matched Finnish–English pairs score above the 95th percentile of random-pair similarities. If it fails, a local multilingual embedding model is compared before continuing.
 11. The early ranking experiment produces a blind-judging CSV and, after judging, precision@10 for nearest-liked, average-vector, and newest-first per persona; the result and the gate 1 decision are recorded in `docs/ai-log.md`.
 12. `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
 
@@ -107,7 +107,11 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [ ] 10. Cross-lingual check script; record the result in `docs/ai-log.md`.
 - [ ] 11. Early ranking experiment scripts (export for blind judging, score judged CSV); record the result and gate 1 decision.
 
+## Decisions
+
+- YouTube Shorts are kept. They can be identified from the URL (`/shorts/`) if filtering is needed later, so no extra column.
+- A local multilingual embedding model is compared only if the cross-lingual check fails (criterion 10).
+
 ## Open questions
 
-- Should YouTube Shorts be kept? Proposal: keep them; they are short but on-topic.
-- Should the cross-lingual check also compare a local multilingual embedding model? Proposal: only if the OpenAI model performs poorly.
+- None.

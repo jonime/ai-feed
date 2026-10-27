@@ -35,6 +35,12 @@ Each criterion must be verifiable by a test, a command, or a clearly observable 
 
 - [ ] 1.
 
+## Decisions
+
+Resolved questions, recorded here before the spec is approved.
+
+-
+
 ## Open questions
 
 -

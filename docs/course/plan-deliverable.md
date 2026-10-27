@@ -2,13 +2,13 @@
 
 ## What is the goal of your project? Give at least 1-2 concrete examples what it can achieve.
 
-The goal is a web application that collects news, articles, and videos from RSS/Atom feeds (Finnish and English) and **learns what each user is interested in** from simple feedback: _Like_, _Not interested_, and clicks. The feed is a list of links; clicking an item opens the original site. Users do not configure topics or subscriptions — the AI figures it out.
+The goal is a web application that collects news, articles, and videos from RSS/Atom feeds (Finnish and English) and **learns what each user is interested in** from simple feedback: _Like_ and _Not interested_ (and optionally clicks). The feed is a list of links; clicking an item opens the original site. Users do not configure topics or subscriptions — the AI figures it out.
 
 AI is the core of the application:
 
 - Every item is converted into a **multilingual semantic embedding**, so the system understands topics regardless of language.
 - The **recommender** scores each new item by its similarity to the closest item the user has liked, minus its similarity to items marked _Not interested_. Recency, diversity, and a share of exploratory items prevent a filter bubble. Every recommendation can be explained.
-- An **LLM** writes a readable summary of each user's interests and (stretch goal) uses web search to find new sources matching those interests.
+- An **LLM** writes a readable summary of each user's interests (optional feature) and, as a stretch goal, uses web search to find new sources matching those interests.
 - The recommender is **evaluated** with simulated users against simple baselines (newest first, random, average of liked items), using time-based data splits, identical feedback histories for every method, and repeated runs so the results are not inflated. A rigorous comparison counts as a result even if the recommender does not win.
 
 **Example 1 — Learning interests across languages.** A user likes a few English articles about AI and software and marks sports news as not interesting. After a handful of interactions, AI and technology items rise to the top — including Finnish Yle articles on the same topics, because the embeddings are multilingual — and sports items drop out. Each item shows why it was recommended: _"Similar to 'X', which you liked."_
@@ -31,7 +31,8 @@ Deliverables: a proof-of-concept prototype with a demo video (15–22 Nov) and t
 | LLM                         | OpenAI small GPT model via the Responses API: interest summaries, web search for source discovery, relevance labels for evaluation                                                   |
 | Content ingestion           | TypeScript scripts with `rss-parser`, run hourly by **GitHub Actions**                                                                                                               |
 | Content sources             | 17 initial RSS/Atom feeds: Yle (Finnish and English), BBC World, Ars Technica, The Verge, TechCrunch, Hacker News, BleepingComputer, New Scientist, NASA, and three YouTube channels |
-| Evaluation                  | TypeScript scripts (replay test, precision@10, diversity), results exported to CSV for charts                                                                                        |
+| Evaluation                  | TypeScript scripts (replay test, precision@10, diversity), results exported to CSV for charts; optionally a local model (Qwen via MTPLX on Apple Silicon) for relevance labels |
+| Testing                     | Vitest unit tests with saved real-feed fixtures; automated two-user Row Level Security tests |
 | Development tools           | VS Code, GitHub Copilot (agent mode), ChatGPT, Git and GitHub                                                                                                                        |
 
 Expected cost is under 10 € in total; only the OpenAI API is paid, everything else runs on free tiers.
@@ -73,9 +74,11 @@ This is a solo project: I do all the work. Total 135 hours, about 17 hours per w
 
 **Use of AI tools during development**
 
+- **Spec-driven workflow:** each feature gets a short spec (goal, scope, testable acceptance criteria, task list) written with AI and approved by me. A coding agent implements one task at a time following project rules in `AGENTS.md` (stack, security rules), runs lint, type checks, and tests, and I review and commit each step. Specs are written just in time, one ahead of implementation.
 - **GitHub Copilot (agent mode in VS Code):** scaffolding, SQL migrations and RLS policies, ingestion and parsing code, UI components, tests, debugging.
 - **ChatGPT / Copilot chat:** research, comparing technical alternatives, reviewing designs. This plan itself was developed iteratively with an AI assistant that challenged assumptions about scope, recommendation methods, and evaluation, and then reviewed by a separate AI agent whose findings (evaluation safeguards, earlier experiments, decision gates) were incorporated.
 - **My responsibility:** architecture decisions, reviewing all generated code (especially security policies and evaluation logic), integration, and validating results.
+- **Local model experiment:** a few well-specified tasks are also tried with a local coding model (Qwen via MTPLX) and compared with the cloud agent.
 - I keep a short log of significant AI-assisted steps for the final report.
 
 **AI inside the application** (separate from development tools): multilingual embeddings, the embedding-based recommender, LLM interest summaries, LLM web search for source discovery, and LLM relevance labels for evaluation. The final documentation will keep these two uses of AI clearly separate.

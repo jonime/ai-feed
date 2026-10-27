@@ -131,6 +131,22 @@ Week dates assume the course runs 26 Oct – 20 Dec 2026; the final deadline is 
 - The developer is responsible for architecture decisions, reviewing all generated code, evaluation design, and validating results.
 - Documentation distinguishes AI used **in the application** (embeddings, recommender, LLM tasks) from AI tools used **during development**.
 
+### 7.1 Spec roadmap
+
+Specs are written just in time: spec N+1 is drafted when spec N reaches its last few tasks, so it reflects what was learned. Workflow and rules are in [AGENTS.md](../AGENTS.md); the template is [specs/\_template.md](specs/_template.md).
+
+| Spec                          | Content                                                                          | Week | Draft when                      |
+| ----------------------------- | -------------------------------------------------------------------------------- | ---- | ------------------------------- |
+| [001](specs/001-ingestion.md) | Project setup, ingestion, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
+| 002                           | Google login, feedback table, two-user RLS tests                                 | 2    | 001 reaches its embedding tasks |
+| 003                           | Feed UI, recommender SQL function, recency, explanations                         | 3    | After gate 1                    |
+| 004                           | Vercel deployment, hourly ingestion (GitHub Actions), allowlist and usage limits | 4    | 003 nearly done                 |
+| 005                           | Evaluation harness                                                               | 5    | During week 4                   |
+| 006                           | Exploration slots and diversity; optional interest summary and click tracking    | 6    | During week 5                   |
+| 007                           | Source discovery (only if gate 2 passes)                                         | 7    | At gate 2                       |
+
+Spec 002 runs alongside the end of 001 because login is independent of ingestion.
+
 ## 8. Risks
 
 | Risk                                                 | Mitigation                                                                                                                                                       |
