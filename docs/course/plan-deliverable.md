@@ -31,8 +31,8 @@ Deliverables: a proof-of-concept prototype with a demo video (15–22 Nov) and t
 | LLM                         | OpenAI small GPT model via the Responses API: interest summaries, web search for source discovery, relevance labels for evaluation                                                   |
 | Content ingestion           | TypeScript scripts with `rss-parser`, run hourly by **GitHub Actions**                                                                                                               |
 | Content sources             | 17 initial RSS/Atom feeds: Yle (Finnish and English), BBC World, Ars Technica, The Verge, TechCrunch, Hacker News, BleepingComputer, New Scientist, NASA, and three YouTube channels |
-| Evaluation                  | TypeScript scripts (replay test, precision@10, diversity), results exported to CSV for charts; optionally a local model (Qwen via MTPLX on Apple Silicon) for relevance labels |
-| Testing                     | Vitest unit tests with saved real-feed fixtures; automated two-user Row Level Security tests |
+| Evaluation                  | TypeScript scripts (replay test, precision@10, diversity), results exported to CSV for charts; optionally a local model (Qwen via MTPLX on Apple Silicon) for relevance labels       |
+| Testing                     | Vitest unit tests with saved real-feed fixtures; automated two-user Row Level Security tests                                                                                         |
 | Development tools           | VS Code, GitHub Copilot (agent mode), ChatGPT, Git and GitHub                                                                                                                        |
 
 Expected cost is under 10 € in total; only the OpenAI API is paid, everything else runs on free tiers.
