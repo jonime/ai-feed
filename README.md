@@ -3,7 +3,7 @@
 An AI-powered personal content feed. It collects news, articles, and videos from Finnish and English RSS/Atom/YouTube feeds and learns what each user is interested in from simple feedback (_Like_, _Not interested_, clicks). The feed is a list of links; clicking an item opens the original site.
 
 > **Status:** Planning complete. Implementation starts with [spec 001](docs/specs/001-ingestion.md).  
-> Solo project for an AI course (8 weeks, 135 h): prototype with demo video 15–22 Nov 2026, final application December 2026.
+> Solo project for an AI course (7 weeks, 135 h): plan due 8 Nov, prototype with demo video due 22 Nov, final version due 13 Dec 2026.
 
 ## How it uses AI
 

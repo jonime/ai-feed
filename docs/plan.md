@@ -1,12 +1,21 @@
 # AI-Powered Personal Content Discovery
 
-**Version:** 1.0 — Project plan  
-**Status:** Planning complete — ready for forum submission  
+**Version:** 1.1 — Project plan  
+**Status:** Planning complete — ready for submission  
 **Project type:** Solo AI course assignment  
-**Duration:** 8 weeks (assumed 26 Oct – 20 Dec 2026)  
-**Estimated workload:** 135 hours  
-**Milestones:** Prototype + video 15–22 Nov 2026; final application December 2026  
+**Duration:** 7 weeks (26 Oct – 13 Dec 2026)  
+**Estimated workload:** 135 hours (course definition)  
 **Long-term potential:** Standalone application
+
+**Deadlines and grading:**
+
+| Phase                | Deadline              | Weight |
+| -------------------- | --------------------- | ------ |
+| Planning (this plan) | Sun 8 Nov 2026 12:00  | 25%    |
+| Prototype + video    | Sun 22 Nov 2026 12:00 | 25%    |
+| Final version        | Sun 13 Dec 2026 12:00 | 50%    |
+
+Deadlines are Sunday noon, so each phase's work is planned to finish by Saturday.
 
 Related documents:
 
@@ -48,16 +57,16 @@ Technical details are in [design.md](design.md).
 
 - **Semantic embeddings** (multilingual, Finnish + English) represent every article and video.
 - **Recommender:** each item is scored by its similarity to the closest item the user liked, minus a penalty for similarity to items marked _Not interested_, combined with recency, diversity, and exploration slots. Every recommendation can be explained.
-- **LLM tasks:** readable interest summary, source discovery with web search, and relevance labels for evaluation. The LLM does not rank items.
+- **LLM tasks:** readable interest summary, relevance labels for evaluation, and (stretch goal) source discovery with web search. The LLM does not rank items.
 - **Evaluation:** replay test with simulated personas against average-vector, newest-first, and random baselines.
 
 ## 4. Deliverables
 
-### 4.1 Prototype (proof of concept, video 15–22 Nov)
+### 4.1 Prototype (proof of concept, due 22 Nov)
 
 Goal: prove the core AI idea. The prototype is a rough first version that the final application grows from, not throwaway code.
 
-- Manually run ingestion script: initial feeds ([design.md §1](design.md#1-content-sources-and-representation)), Finnish and English, including YouTube channels; normalization, deduplication, embeddings.
+- Ingestion of the initial feeds ([design.md §1](design.md#1-content-sources-and-representation)), Finnish and English, including YouTube channels; normalization, deduplication, embeddings. Runs hourly via GitHub Actions from week 2, so content accumulates for the evaluation.
 - Google login (Supabase Auth); feedback stored per user and protected by RLS.
 - Automated two-user RLS tests for every per-user table, written together with the table. They must pass before deployment or testing with another person.
 - Early ranking experiment and cross-lingual check ([design.md §4.1](design.md#41-early-checks-week-2-spec-001)).
@@ -65,7 +74,7 @@ Goal: prove the core AI idea. The prototype is a rough first version that the fi
 - Recommender ranking ([design.md §2.1](design.md#21-interest-scoring-nearest-liked-item)) with recency and "why recommended" explanations.
 - Runs on localhost against the cloud Supabase project.
 
-Not included: scheduled jobs, deployment, exploration slots, interest summary, evaluation harness, source discovery.
+Not included: deployment, exploration slots, interest summary, evaluation harness, source discovery.
 
 **Video (2–3 min):**
 
@@ -73,16 +82,15 @@ Not included: scheduled jobs, deployment, exploration slots, interest summary, e
 2. Like 4–5 Linux/AI articles → feed re-ranks with explanations.
 3. Finnish articles on the same topic appear (cross-lingual embeddings).
 4. Mark sports as not interesting → sports articles drop.
-5. Optional: compare against newest-first ordering.
+5. Gate 1 result: nearest-liked vs average-vector vs newest-first (precision@10 from the early experiment).
 
-### 4.2 Final application (December)
+### 4.2 Final application (due 13 Dec)
 
 - Deployed on Vercel; access limited by an allowlist and per-user LLM usage limits.
-- Scheduled ingestion via GitHub Actions.
 - Exploration slots and diversity re-ranking.
 - Evaluation harness and results ([design.md §4](design.md#4-evaluation)).
 - Optional (see cut order in §9): LLM interest summary; click tracking as a weak positive signal.
-- Stretch goal, only if gate 2 passes: source discovery ([design.md §3](design.md#3-source-discovery-stretch-goal)).
+- Stretch goals, only after gate 2 passes ([design.md §3](design.md#3-source-discovery-stretch-goal)): (a) catalog-based source discovery; (b) LLM web-search discovery.
 - Documentation and final demonstration.
 
 ## 5. Scope boundaries
@@ -102,27 +110,26 @@ The content data model should stay generic enough to add other media types later
 
 ## 6. Schedule
 
-Week dates assume the course runs 26 Oct – 20 Dec 2026; the final deadline is confirmed in week 1.
+About 19 hours per week over 7 weeks. Most code is written by AI agents, so implementation may run ahead of these estimates; when a spec finishes early, the next one starts immediately and saved time goes to the stretch goals.
 
 ### Phase 1 — Prototype
 
-| Week | Dates          | Focus                                                                                                                                                                            | AI tool support                          | Hours |
-| ---- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ----- |
-| 1    | 26 Oct – 1 Nov | Plan submission, confirm final deadline, project setup (Next.js, Supabase CLI, pgvector), Google OAuth configuration, start ingestion (fetch, parse, fixtures), LLM model choice | Research, scaffolding, parser drafts     | 16    |
-| 2    | 2 – 8 Nov      | Finish ingestion and embeddings, cross-lingual check, **early ranking experiment (gate 1)**, Google login, feedback table with RLS and two-user tests                            | SQL and test drafts, experiment script   | 20    |
-| 3    | 9 – 15 Nov     | Link list and feedback UI, recommender SQL function, recency, explanations, demo data — **prototype ready**                                                                      | SQL review, component generation         | 19    |
-| 4    | 16 – 22 Nov    | **Record and submit prototype video**; Vercel deployment (only after RLS tests pass), GitHub Actions ingestion, allowlist and usage limits                                       | Deployment configuration, workflow files | 14    |
+| Week | Dates          | Focus                                                                                                                                                                                                                    | AI tool support                                       | Hours |
+| ---- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | ----- |
+| 1    | 26 Oct – 1 Nov | Project setup (Next.js, Supabase CLI, pgvector), Google OAuth configuration, start ingestion (fetch, parse, fixtures), LLM model choice, plan polish                                                                     | Research, scaffolding, parser drafts                  | 16    |
+| 2    | 2 – 8 Nov      | Finish ingestion and embeddings, **hourly ingestion with GitHub Actions**, cross-lingual check, **early ranking experiment (gate 1)**, Google login, feedback table with RLS and two-user tests; **submit plan (8 Nov)** | SQL and test drafts, workflow file, experiment script | 21    |
+| 3    | 9 – 15 Nov     | Link list and feedback UI, recommender SQL function, recency, explanations, demo data — **prototype ready**                                                                                                              | SQL review, component generation                      | 19    |
+| 4    | 16 – 22 Nov    | **Record and submit prototype video (22 Nov)**; Vercel deployment (only after RLS tests pass), allowlist and usage limits                                                                                                | Deployment configuration                              | 13    |
 
 ### Phase 2 — Final application
 
-| Week | Dates          | Focus                                                                                                                                                                                         | AI tool support                    | Hours   |
-| ---- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------- |
-| 5    | 23 – 29 Nov    | Evaluation harness with protocol safeguards (time-based splits, identical histories, near-duplicate handling, repeated runs); LLM labels and manual agreement check; first validation results | Metric code, labeling scripts      | 18      |
-| 6    | 30 Nov – 6 Dec | Exploration slots and diversity; optional LLM interest summary and click tracking; tune on validation set and **freeze parameters**; **gate 2 review**                                        | Debugging, algorithm review        | 16      |
-| 7    | 7 – 13 Dec     | Final evaluation run on the test window; source discovery if gate 2 passed, otherwise hardening and fixes                                                                                     | Prompt design, feed parsing, tests | 12      |
-| 8    | 14 – 20 Dec    | Final testing, documentation, demonstration, submission                                                                                                                                       | Documentation drafts               | 10      |
-| —    |                | Buffer                                                                                                                                                                                        |                                    | 10      |
-|      |                | **Total**                                                                                                                                                                                     |                                    | **135** |
+| Week | Dates          | Focus                                                                                                                                                                                         | AI tool support               | Hours   |
+| ---- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------- |
+| 5    | 23 – 29 Nov    | Evaluation harness with protocol safeguards (time-based splits, identical histories, near-duplicate handling, repeated runs); LLM labels and manual agreement check; first validation results | Metric code, labeling scripts | 19      |
+| 6    | 30 Nov – 6 Dec | Exploration slots and diversity; optional LLM interest summary and click tracking; tune on validation set and **freeze parameters**; **gate 2**                                               | Debugging, algorithm review   | 19      |
+| 7    | 7 – 12 Dec     | Final evaluation run on the test window; documentation and final demonstration; **submit final version (13 Dec)**; stretch goals only if gate 2 passed earlier                                | Documentation drafts, tests   | 16      |
+| —    |                | Buffer                                                                                                                                                                                        |                               | 12      |
+|      |                | **Total**                                                                                                                                                                                     |                               | **135** |
 
 ## 7. Development approach
 
@@ -130,20 +137,21 @@ Week dates assume the course runs 26 Oct – 20 Dec 2026; the final deadline is 
 - AI coding tools (e.g. GitHub Copilot, ChatGPT) assist with scaffolding, repetitive code, tests, debugging, research, and documentation drafts.
 - The developer is responsible for architecture decisions, reviewing all generated code, evaluation design, and validating results.
 - Documentation distinguishes AI used **in the application** (embeddings, recommender, LLM tasks) from AI tools used **during development**.
+- Documentation is written continuously (AI log, design updates at the end of each spec), so the final week is not consumed by writing.
 
 ### 7.1 Spec roadmap
 
 Specs are written just in time: spec N+1 is drafted when spec N reaches its last few tasks, so it reflects what was learned. Workflow and rules are in [AGENTS.md](../AGENTS.md); the template is [specs/\_template.md](specs/_template.md).
 
-| Spec                          | Content                                                                          | Week | Draft when                      |
-| ----------------------------- | -------------------------------------------------------------------------------- | ---- | ------------------------------- |
-| [001](specs/001-ingestion.md) | Project setup, ingestion, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
-| 002                           | Google login, feedback table, two-user RLS tests                                 | 2    | 001 reaches its embedding tasks |
-| 003                           | Feed UI, recommender SQL function, recency, explanations                         | 3    | After gate 1                    |
-| 004                           | Vercel deployment, hourly ingestion (GitHub Actions), allowlist and usage limits | 4    | 003 nearly done                 |
-| 005                           | Evaluation harness                                                               | 5    | During week 4                   |
-| 006                           | Exploration slots and diversity; optional interest summary and click tracking    | 6    | During week 5                   |
-| 007                           | Source discovery (only if gate 2 passes)                                         | 7    | At gate 2                       |
+| Spec                          | Content                                                                                                     | Week | Draft when                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- |
+| [001](specs/001-ingestion.md) | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
+| 002                           | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
+| 003                           | Feed UI, recommender SQL function, recency, explanations                                                    | 3    | After gate 1                    |
+| 004                           | Vercel deployment, allowlist and usage limits                                                               | 4    | 003 nearly done                 |
+| 005                           | Evaluation harness                                                                                          | 5    | During week 4                   |
+| 006                           | Exploration slots and diversity; optional interest summary and click tracking                               | 6    | During week 5                   |
+| 007                           | Source discovery: (a) catalog-based, (b) LLM web search                                                     | 6–7  | When gate 2 passes              |
 
 Spec 002 runs alongside the end of 001 because login is independent of ingestion.
 
@@ -151,19 +159,19 @@ Spec 002 runs alongside the end of 001 because login is independent of ingestion
 
 | Risk                                                 | Mitigation                                                                                                                                                       |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scope grows too large                                | Fixed prototype scope; decision gates and cut order (§9); 10 h buffer                                                                                            |
+| Scope grows too large                                | Fixed prototype scope; decision gates and cut order (§9); 12 h buffer                                                                                            |
 | Prototype not ready for the video window             | Prototype ready by 15 Nov; week 4 is slack for re-recording                                                                                                      |
-| Final deadline earlier than 20 Dec                   | Confirm in week 1; cut order (§9) shortens Phase 2                                                                                                               |
+| Final phase is only three weeks                      | Ingestion runs from week 2 so evaluation data is ready; gate 2 is criteria-based and can pass early; documentation written continuously; cut order (§9)          |
 | Recommendations do not clearly beat baselines        | Early ranking experiment in week 2 (gate 1); a rigorous comparison counts as success either way                                                                  |
 | Evaluation results inflated                          | Time-based splits, identical feedback histories, near-duplicate exclusion, frozen parameters, repeated runs ([design.md §4.3](design.md#43-protocol-safeguards)) |
 | Little real feedback data (few users)                | Persona-based replay evaluation                                                                                                                                  |
 | LLM labels are biased proxies                        | Manual agreement check reported overall and for Finnish vs English; different model family possible                                                              |
-| Poor Finnish embedding quality                       | Multilingual model required; tested in week 1                                                                                                                    |
+| Poor Finnish embedding quality                       | Multilingual model required; tested in week 2                                                                                                                    |
 | Small or noisy content pool                          | Add Finnish topic-specific and non-tech feeds; balance by source                                                                                                 |
 | Sparse text for some items (Hacker News titles only) | Accept for now; optionally fetch the linked page's meta description later                                                                                        |
 | RSS feeds unreliable                                 | Multiple sources, robust error handling                                                                                                                          |
 | API costs or provider changes                        | Limited LLM use, cached results, model name stored with embeddings                                                                                               |
-| Source discovery too complex                         | Only attempted if gate 2 passes; first cut                                                                                                                       |
+| Source discovery too complex                         | Two independent stages, both after gate 2; first cuts                                                                                                            |
 | LLM suggests invented or unsafe URLs                 | Every candidate fetched and validated; SSRF safeguards                                                                                                           |
 | Free-tier limits (Vercel, Supabase)                  | Jobs on GitHub Actions; 512-dim embeddings; prune old articles                                                                                                   |
 | Supabase free project pauses when idle               | Scheduled jobs keep it active; check before demos                                                                                                                |
@@ -174,19 +182,20 @@ Spec 002 runs alongside the end of 001 because login is independent of ingestion
 
 **Gate 1 — end of week 2:** the early ranking experiment ([design.md §4.1](design.md#41-early-checks-week-2-spec-001)). If nearest-liked is not at least on par with average-vector and better than newest-first, investigate before building the UI around it; average-vector is the fallback ranking.
 
-**Gate 2 — end of week 6:** source discovery starts only if all of these hold:
+**Gate 2 — as soon as its criteria hold (earliest end of week 5, latest end of week 6):** source discovery starts only if all of these hold:
 
 - the core application is deployed and working (ingestion, feed, feedback, recommender);
 - the evaluation harness produces validation results and parameters are frozen;
 - RLS tests pass.
 
-Otherwise week 7 goes to hardening and fixes.
+If gate 2 has not passed by the end of week 6, week 7 goes to the final evaluation run, documentation, and fixes only.
 
 **Cut order** if time runs short:
 
-1. Source discovery
-2. LLM interest summary
-3. Click tracking
+1. LLM web-search discovery
+2. Catalog-based discovery
+3. LLM interest summary
+4. Click tracking
 
 The minimum acceptable result is: ingestion, personal feed with feedback, the recommender, RLS tests, and the baseline comparison.
 
@@ -194,8 +203,8 @@ The minimum acceptable result is: ingestion, personal feed with feedback, the re
 
 ## 10. Decisions made
 
-- Solo course project, 8 weeks, 135 hours; may continue as a standalone application.
-- Two submissions: prototype with video (15–22 Nov), final application (December).
+- Solo course project, 7 weeks (26 Oct – 13 Dec 2026), 135 hours; may continue as a standalone application.
+- Three submissions: plan (8 Nov, 25%), prototype with video (22 Nov, 25%), final version (13 Dec, 50%).
 - Link aggregator; clicking opens the original website.
 - Multiple users with personal feeds; Google login via Supabase Auth; access limited by an allowlist.
 - Row Level Security on all tables; shared content is read-only for users, per-user data is owner-only.
@@ -203,10 +212,10 @@ The minimum acceptable result is: ingestion, personal feed with feedback, the re
 - Finnish and English supported from the start.
 - Recommender: nearest-liked-item scoring with negative penalty, recency, diversity, and exploration slots.
 - Average-vector, newest-first, and random as evaluation baselines.
-- OpenAI for embeddings and LLM; LLM used for interest summary, source discovery (web search), and evaluation labels — not for ranking.
-- Stack: Next.js on Vercel, Supabase Postgres + pgvector, supabase-js with SQL migrations (no ORM), Supabase Auth, GitHub Actions for scheduled jobs.
-- Source discovery is a stretch goal, attempted only if gate 2 passes; admin-approved sources join a shared pool.
-- Cut order: source discovery, LLM interest summary, click tracking.
+- OpenAI for embeddings and LLM; LLM used for interest summary, evaluation labels, and (stretch) web-search source discovery — not for ranking.
+- Stack: Next.js on Vercel, Supabase Postgres + pgvector, supabase-js with SQL migrations (no ORM), Supabase Auth, GitHub Actions for scheduled jobs (hourly ingestion from week 2).
+- Source discovery is a two-stage stretch goal (catalog-based, then LLM web search), attempted only after gate 2; admin-approved sources join a shared pool.
+- Cut order: web-search discovery, catalog discovery, LLM interest summary, click tracking.
 
 ## 11. Open decisions
 
@@ -214,5 +223,4 @@ The minimum acceptable result is: ingestion, personal feed with feedback, the re
 - Parameter values (click weight, $\lambda$, recency decay, slot mix) — tuned through evaluation
 - How long older but relevant articles stay in the feed
 - Whether to add more YouTube channels or Finnish technology media to the active set
-- Exact final submission date in December — **confirm in week 1**
 - Per-user LLM limits (e.g. interest summaries per day, discovery runs per week)

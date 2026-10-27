@@ -1,6 +1,6 @@
 # Agent Instructions
 
-AI-powered personal content feed: ingests Finnish and English RSS/Atom/YouTube feeds, embeds items, and recommends links per user based on feedback. Solo course project (8 weeks, 135 h).
+AI-powered personal content feed: ingests Finnish and English RSS/Atom/YouTube feeds, embeds items, and recommends links per user based on feedback. Solo course project (7 weeks, 135 h; final deadline 13 Dec 2026).
 
 ## Documents
 

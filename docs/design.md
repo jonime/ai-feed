@@ -91,19 +91,24 @@ With an empty profile, the feed shows recent items balanced across sources and t
 
 OpenAI API (a small, low-cost GPT model, chosen in week 1). The LLM is **not** used to rank individual items (cost, latency, reproducibility). It is used for:
 
-1. **Interest summary:** periodically turns likes/dislikes into a readable profile shown to the user.
-2. **Source discovery:** finds candidate sites with the built-in web search tool and assesses source quality.
-3. **Evaluation judge:** labels test items as relevant/not relevant for simulated personas.
+1. **Interest summary** (optional): periodically turns likes/dislikes into a readable profile shown to the user.
+2. **Evaluation judge:** labels test items as relevant/not relevant for simulated personas.
+3. **Source discovery** (stretch, stage b): finds candidate sites with the built-in web search tool and assesses source quality.
 
 ## 3. Source discovery (stretch goal)
 
-The LLM only _suggests_ candidates; deterministic code verifies them.
+Two independent stages, both attempted only after gate 2 ([plan.md §9](plan.md#9-decision-gates-and-cut-order)). Both feed the same validation and approval steps.
 
-1. Candidates come first from inactive catalog sources ([feeds.md](feeds.md)), then from the LLM using web search and the interest summary.
-2. Fetch each site and detect RSS/Atom feeds (autodiscovery). Feed URLs proposed by the LLM are never trusted without fetching.
-3. Parse the feed: is it active, with recent posts?
-4. Embed recent items and score them against the user's interests; the LLM assesses source quality.
-5. An admin approves a source before it is ingested. Approved sources join the shared source pool; each user's recommender decides whether its items are relevant to them.
+**Stage (a) — catalog-based (no LLM, ~5 h):** inactive sources from the catalog ([feeds.md](feeds.md)) are fetched, their recent items embedded and scored against each user's liked items. Sources that match well are proposed to the admin.
+
+**Stage (b) — LLM web search (~6–8 h):** the LLM, using web search and the interest summary, suggests candidate sites. The LLM only _suggests_; deterministic code verifies.
+
+Validation and approval (both stages):
+
+1. Fetch each site and detect RSS/Atom feeds (autodiscovery). Feed URLs proposed by the LLM are never trusted without fetching.
+2. Parse the feed: is it active, with recent posts?
+3. Embed recent items and score them against the user's interests; in stage (b) the LLM also assesses source quality.
+4. An admin approves a source before it is ingested. Approved sources join the shared source pool; each user's recommender decides whether its items are relevant to them.
 
 Optional extra candidate source: outbound links from liked articles, fed into the same validation pipeline.
 

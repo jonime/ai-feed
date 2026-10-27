@@ -3,7 +3,7 @@
 **Status:** Draft  
 **Milestone:** Prototype (weeks 1–2)  
 **Depends on:** —  
-**Estimate:** 19 h
+**Estimate:** 21 h
 
 ## Goal
 
@@ -22,13 +22,14 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - Project scaffold: Next.js (App Router, TypeScript), pnpm, Vitest, ESLint, Supabase CLI linked to the cloud project, `.env.example`, `.gitignore`.
 - Migration: enable pgvector; create `sources` and `content_items` with RLS.
 - Seed `sources` from feeds.md: the 17 initial feeds active, the rest inactive, Reddit excluded.
-- Ingestion command `pnpm ingest`, run manually in the prototype.
+- Ingestion command `pnpm ingest`.
+- Hourly GitHub Actions workflow running `pnpm ingest`, so content accumulates from week 2 for the evaluation.
 - Cross-lingual embedding check script.
 - Early ranking experiment script ([design.md §4.1](../design.md#41-early-checks-week-2-spec-001)).
 
 ## Out of scope
 
-- Scheduling (GitHub Actions) — later spec, week 4.
+- Vercel deployment.
 - Pruning old items.
 - Any UI.
 - Fetching linked pages (e.g. meta descriptions for Hacker News).
@@ -63,7 +64,13 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 
 **Secrets**
 
-- `OPENAI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` only in `.env.local` (gitignored); ingestion is a server-side script.
+- `OPENAI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` only in `.env.local` (gitignored) locally and in GitHub Actions secrets for the scheduled run; ingestion is a server-side script.
+
+**Scheduled run**
+
+- GitHub Actions workflow with `schedule` (hourly) and `workflow_dispatch` (manual trigger).
+- Concurrency group so two runs never overlap.
+- Job timeout (e.g. 15 minutes); the run fails visibly if ingestion throws.
 
 **Cross-lingual check**
 
@@ -91,7 +98,8 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 9. `pnpm ingest` prints a per-source summary: fetched, new, skipped (not modified), errors.
 10. The cross-lingual check passes: at least 9 of 10 matched Finnish–English pairs score above the 95th percentile of random-pair similarities. If it fails, a local multilingual embedding model is compared before continuing.
 11. The early ranking experiment produces a blind-judging CSV and, after judging, precision@10 for nearest-liked, average-vector, and newest-first per persona; the result and the gate 1 decision are recorded in `docs/ai-log.md`.
-12. `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
+12. The GitHub Actions workflow runs hourly and on manual trigger, uses repository secrets only, never overlaps with itself, and a manual run ingests successfully against the cloud project.
+13. `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
 
 ## Tasks
 
@@ -104,8 +112,9 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [ ] 7. Embedding module (batching, retry on next run).
 - [ ] 8. `pnpm ingest` command with per-source summary.
 - [ ] 9. RLS tests (criterion 2).
-- [ ] 10. Cross-lingual check script; record the result in `docs/ai-log.md`.
-- [ ] 11. Early ranking experiment scripts (export for blind judging, score judged CSV); record the result and gate 1 decision.
+- [ ] 10. GitHub Actions workflow for hourly ingestion; add repository secrets; verify with a manual run (criterion 12).
+- [ ] 11. Cross-lingual check script; record the result in `docs/ai-log.md`.
+- [ ] 12. Early ranking experiment scripts (export for blind judging, score judged CSV); record the result and gate 1 decision.
 
 ## Decisions
 
