@@ -219,8 +219,12 @@ The minimum acceptable result is: ingestion, personal feed with feedback, the re
 
 ## 11. Open decisions
 
-- Exact OpenAI model for LLM tasks (week 1, based on price and Finnish quality)
-- Parameter values (click weight, $\lambda$, recency decay, slot mix) — tuned through evaluation
-- How long older but relevant articles stay in the feed
-- Whether to add more YouTube channels or Finnish technology media to the active set
-- Per-user LLM limits (e.g. interest summaries per day, discovery runs per week)
+None of these block spec 001; each is decided in the spec that first needs it.
+
+| Decision                                                                                  | Decided in                                                          |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Exact OpenAI model for LLM tasks (price, Finnish quality)                                 | Spec 005 (evaluation labels)                                        |
+| Parameter values (click weight, $\lambda$, recency decay, slot mix)                       | Defaults in spec 003; tuned and frozen through evaluation in week 6 |
+| How long older but relevant items stay in the feed (possibly longer for videos than news) | Spec 003 (recency defaults)                                         |
+| More YouTube channels or Finnish technology media in the active set                       | After about a week of ingestion data shows volume per topic         |
+| Per-user LLM limits (e.g. interest summaries per day, discovery runs per week)            | Spec 004                                                            |

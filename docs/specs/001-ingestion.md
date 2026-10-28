@@ -1,6 +1,6 @@
 # 001 — Project setup, content ingestion, and early checks
 
-**Status:** Draft  
+**Status:** Approved  
 **Milestone:** Prototype (weeks 1–2)  
 **Depends on:** —  
 **Estimate:** 21 h
