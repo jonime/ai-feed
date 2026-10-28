@@ -93,7 +93,7 @@ Let users sign in with Google and store their per-item feedback (_Like_, _Not in
 
 ## Tasks
 
-- [ ] 1. Add `@supabase/ssr`; create server/browser client helpers and session refresh following the installed Next.js docs.
+- [x] 1. Add `@supabase/ssr`; create server/browser client helpers and session refresh following the installed Next.js docs.
 - [ ] 2. Configure the Google provider for local Supabase; document cloud and Google Cloud setup steps in README (no secrets).
 - [ ] 3. Login page, auth callback route, sign-out, redirect for unauthenticated requests, and the minimal signed-in placeholder page (criterion 1).
 - [ ] 4. Migration: `feedback` table, constraints, defaults, trigger, grants, RLS policies, `set_feedback` function (criteria 2 and 4).
