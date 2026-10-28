@@ -1,6 +1,6 @@
 # 002 — Google login and feedback storage
 
-**Status:** Draft  
+**Status:** Approved  
 **Milestone:** Prototype (week 2)  
 **Depends on:** 001 (tables `sources`, `content_items`)  
 **Estimate:** 8 h
