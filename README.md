@@ -41,6 +41,18 @@ node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
 
 That ingestion command writes to the selected database. Confirm the target project before running it; use production for read-only checks unless a production write is explicitly intended. Never print or commit either environment file.
 
+## Database integration tests
+
+Start the local Supabase stack and apply migrations before running the database-backed tests:
+
+```sh
+supabase start
+supabase db reset
+pnpm test:integration
+```
+
+`supabase db reset` deletes local database data and auth users before reapplying migrations. The integration command does not reset the database; it verifies that the local Supabase API and `.env.local` target this project's local ports, obtains test keys from the local CLI process without displaying them, and fails if the tests are skipped. It never targets a linked or hosted project. The ordinary `pnpm test` command remains hermetic and skips the database-backed tests.
+
 ## Google sign-in setup
 
 This configures OAuth for spec 002's Google login page and application callback route. The app runs locally at `http://localhost:3001`.

@@ -14,7 +14,8 @@
     "ranking:score:centered": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/score-centered-ranking.mts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integration": "node scripts/test-integration.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
