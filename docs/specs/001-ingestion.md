@@ -111,7 +111,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [x] 6. Database writes (insert on conflict do nothing, source status updates).
 - [x] 7. Embedding module (batching, retry on next run).
 - [x] 8. `pnpm ingest` command with per-source summary.
-- [ ] 9. RLS tests (criterion 2).
+- [x] 9. RLS tests (criterion 2).
 - [ ] 10. GitHub Actions workflow for hourly ingestion; add repository secrets; verify with a manual run (criterion 12).
 - [ ] 11. Cross-lingual check script; record the result in `docs/ai-log.md`.
 - [ ] 12. Early ranking experiment scripts (export for blind judging, score judged CSV); record the result and gate 1 decision.
