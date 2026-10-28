@@ -59,6 +59,7 @@ $$
 - $P$ = positive interactions. Likes have weight 1.0; clicks have a lower weight (e.g. 0.3) because they are a weak signal.
 - $N$ = items marked _Not interested_. $\lambda$ controls the strength of the penalty.
 - Skipped or ignored items are not used as negative feedback.
+- Items marked _Seen_ are hidden from the feed but are neutral: they are neither positive nor negative signals ([§7](#7-user-interaction)).
 - Signal precedence per item: explicit feedback overrides clicks. If an item is liked or marked _Not interested_, only that signal counts (the latest explicit action wins). Clicks count only for items without explicit feedback.
 - Click tracking is optional (see the cut order in [plan.md §9](plan.md#9-decision-gates-and-cut-order)); the recommender works with explicit feedback alone.
 
@@ -235,6 +236,69 @@ Tables are added by the spec that first needs them. Shared tables are readable b
 
 Indexes: `published_at desc`; an HNSW index on `embedding` is added only if exact search becomes slow (tens of thousands of rows are fine without it).
 
-### 6.3 Later tables
+### 6.3 `feedback` (per-user)
 
-Feedback, interest summaries, discovery candidates, allowlist — defined in their specs.
+One row per user and item; the current state only (latest action wins). Undo deletes the row.
+
+| Column                     | Type                        | Notes                                                    |
+| -------------------------- | --------------------------- | -------------------------------------------------------- |
+| `user_id`                  | `uuid` FK → `auth.users`    | Part of PK; defaults to `auth.uid()`                     |
+| `item_id`                  | `uuid` FK → `content_items` | Part of PK                                               |
+| `kind`                     | `text`                      | `like`, `not_interested`, or `seen`                      |
+| `via`                      | `text`                      | `button` or `swipe`; used to analyze accidental gestures |
+| `created_at`, `updated_at` | `timestamptz`               |                                                          |
+
+RLS: owner-only `select`, `insert`, `update`, `delete`; covered by two-user tests.
+
+### 6.4 Later tables
+
+Click events, interest summaries, discovery candidates, allowlist — defined in their specs.
+
+## 7. User interaction
+
+The feed is a single column of compact cards, responsive for phone and desktop. Each card shows title, source, time, thumbnail (if any), and a one-line explanation.
+
+### 7.1 Actions
+
+| Action           | Button     | Touch gesture | Signal   | Effect in the feed                                                      |
+| ---------------- | ---------- | ------------- | -------- | ----------------------------------------------------------------------- |
+| _Like_           | 👍         | Swipe right   | Positive | Card stays, marked as liked                                             |
+| _Not interested_ | 👎         | Swipe left    | Negative | Card collapses immediately                                              |
+| _Seen_           | ✓ ("Seen") | —             | Neutral  | Card collapses immediately; for items already read or watched elsewhere |
+
+- Pressing the active button again undoes the action; choosing another action replaces it.
+- Every action that hides a card shows a short **Undo** toast.
+- Buttons are always available on every device; gestures are a touch shortcut, not the only way (accessibility).
+- Rated items (any action) do not return in the feed. A _Liked_ page lists liked items.
+- _Seen_ is a button only, so that swipe-left keeps a single meaning.
+
+### 7.2 Gesture safeguards
+
+Swipe-to-dismiss is a common habit (e.g. in email), so a left swipe meaning "already seen" could be recorded as _Not interested_. Safeguards:
+
+- The swipe reveals a colored background with an icon and label ("Like" / "Not interested") and only commits past a threshold (~40% of card width).
+- Horizontal swipes lock direction so vertical scrolling is never misread as a swipe.
+- Undo toast after every swipe.
+- Feedback records `via` (`button` / `swipe`), so undo rates by input method can be measured and reported.
+
+### 7.3 Ranking updates
+
+The ranking does not reorder while the user is interacting. New feedback takes effect on the next load or when the user presses **Refresh feed**.
+
+### 7.4 Explanations
+
+- Personalized items: "Similar to _X_, which you liked".
+- Exploration slots: "Exploring: something new".
+- Cold start: "Recent from _source_".
+
+### 7.5 Not included
+
+Reasons for dislikes ("not this topic" / "not this source"), hiding a whole source, and impression tracking are possible later additions.
+
+**Implicit skip signals** (scrolling quickly past an item as a weak negative) are deliberately left out:
+
+- Scrolling past is ambiguous: the user may have already read the story elsewhere, got enough from the title, or been in a hurry. Lower positions are skipped more just because of their position.
+- Most items are skipped, so even small negative weights would add up and, with the nearest-item penalty, push down whole topics.
+- It needs impression tracking (which cards were visible and for how long) and would have to be simulated in the evaluation, where realistic skip behavior is hard to model.
+
+If added later, the safer variant is "skip above click": items shown above a clicked item without any interaction get a small negative weight. It requires click tracking and a log of the ordered item IDs per feed load.

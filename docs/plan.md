@@ -70,7 +70,7 @@ Goal: prove the core AI idea. The prototype is a rough first version that the fi
 - Google login (Supabase Auth); feedback stored per user and protected by RLS.
 - Automated two-user RLS tests for every per-user table, written together with the table. They must pass before deployment or testing with another person.
 - Early ranking experiment and cross-lingual check ([design.md §4.1](design.md#41-early-checks-week-2-spec-001)).
-- Minimal Next.js link list with _Like_ / _Not interested_ buttons.
+- Next.js link list with _Like_ / _Not interested_ / _Seen_ buttons, swipe gestures on touch devices, and undo ([design.md §7](design.md#7-user-interaction)).
 - Recommender ranking ([design.md §2.1](design.md#21-interest-scoring-nearest-liked-item)) with recency and "why recommended" explanations.
 - Runs on localhost against the cloud Supabase project.
 
@@ -147,7 +147,7 @@ Specs are written just in time: spec N+1 is drafted when spec N reaches its last
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- |
 | [001](specs/001-ingestion.md) | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
 | 002                           | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
-| 003                           | Feed UI, recommender SQL function, recency, explanations                                                    | 3    | After gate 1                    |
+| 003                           | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
 | 004                           | Vercel deployment, allowlist and usage limits                                                               | 4    | 003 nearly done                 |
 | 005                           | Evaluation harness                                                                                          | 5    | During week 4                   |
 | 006                           | Exploration slots and diversity; optional interest summary and click tracking                               | 6    | During week 5                   |
