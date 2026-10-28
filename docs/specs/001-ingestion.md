@@ -1,6 +1,6 @@
 # 001 — Project setup, content ingestion, and early checks
 
-**Status:** Approved  
+**Status:** In progress (task 11 waits for enough Yle English/Finnish pairs; task 13 open)  
 **Milestone:** Prototype (weeks 1–2)  
 **Depends on:** —  
 **Estimate:** 21 h
@@ -85,6 +85,12 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - Output the merged, shuffled top 10s as a CSV for blind manual judging; a second step computes precision@10 per method from the judged CSV.
 - No database writes; read-only queries with the service role in a local script.
 
+**Language centering (added after the first gate 1 run)**
+
+- The first run showed a language bias: random Finnish–Finnish pairs average cosine 0.232, English–English 0.148, Finnish–English 0.077 (306 items). Nearest-liked therefore pulled unrelated Finnish news from a single Finnish like. See [design.md §1](../design.md#1-content-sources-and-representation).
+- Centered vector: `normalize(embedding − mean_embedding[language])`, with per-language means computed from all embedded items at run time and saved with the results, so a run is reproducible.
+- The re-run judges only items that were not judged in the first run; existing judgments are reused.
+
 ## Acceptance criteria
 
 1. `supabase db reset` applies all migrations cleanly; `sources` and `content_items` exist with RLS enabled.
@@ -96,10 +102,11 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 7. A failing feed (mocked 404 or timeout) is recorded in `sources.last_error` while other feeds are still ingested.
 8. After a run, every new item has a 512-dimension embedding and `embedding_model` set.
 9. `pnpm ingest` prints a per-source summary: fetched, new, skipped (not modified), errors.
-10. The cross-lingual check passes: at least 9 of 10 matched Finnish–English pairs score above the 95th percentile of random-pair similarities. If it fails, a local multilingual embedding model is compared before continuing.
+10. The cross-lingual check reports results for both raw and language-centered vectors. It passes if at least 9 of 10 matched Finnish–English pairs score above the 95th percentile of random-pair similarities for at least one of them. If both fail, a local multilingual embedding model is compared before continuing.
 11. The early ranking experiment produces a blind-judging CSV and, after judging, precision@10 for nearest-liked, average-vector, and newest-first per persona; the result and the gate 1 decision are recorded in `docs/ai-log.md`.
 12. The GitHub Actions workflow runs hourly and on manual trigger, uses repository secrets only, never overlaps with itself, and a manual run ingests successfully against the cloud project.
-13. `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
+13. The gate 1 re-run reports precision@10 per persona for nearest-liked and average-vector on raw and centered vectors (plus newest-first), reusing earlier judgments; the result and the final gate 1 decision (method and whether to center) are recorded in `docs/ai-log.md`.
+14. `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
 
 ## Tasks
 
@@ -113,13 +120,15 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [x] 8. `pnpm ingest` command with per-source summary.
 - [x] 9. RLS tests (criterion 2).
 - [x] 10. GitHub Actions workflow for hourly ingestion; add repository secrets; verify with a manual run (criterion 12).
-- [ ] 11. Cross-lingual check script; record the result in `docs/ai-log.md`.
+- [ ] 11. Cross-lingual check script for raw and centered vectors; record the result in `docs/ai-log.md`.
 - [x] 12. Early ranking experiment scripts (export for blind judging, score judged CSV); record the result and gate 1 decision.
+- [ ] 13. Gate 1 re-run with language centering: add centered variants to the ranking script, export only unjudged items for blind judging, score, and record the final gate 1 decision (criterion 13).
 
 ## Decisions
 
 - YouTube Shorts are kept. They can be identified from the URL (`/shorts/`) if filtering is needed later, so no extra column.
-- A local multilingual embedding model is compared only if the cross-lingual check fails (criterion 10).
+- A local multilingual embedding model is compared only if the cross-lingual check fails for both raw and centered vectors (criterion 10).
+- Gate 1 is decided on the re-run with centered vectors (task 13), not on the first run alone.
 
 ## Open questions
 
