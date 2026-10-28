@@ -22,20 +22,20 @@
  */
 
 import Parser from "rss-parser";
-import { normalizeUrl } from "./url";
+import { normalizeUrl } from "./url.ts";
 import {
   decodeEntities,
   htmlToText,
   isLinkOnly,
   truncateSummary,
-} from "./text";
-import { removeYouTubeBoilerplate } from "./boilerplate";
+} from "./text.ts";
+import { removeYouTubeBoilerplate } from "./boilerplate.ts";
 import {
   elementText,
   extractAtomCategories,
   extractThumbnailUrl,
   splitItemBlocks,
-} from "./raw";
+} from "./raw.ts";
 
 /** A normalized feed item, shaped for the `content_items` table. */
 export interface ParsedItem {
@@ -104,7 +104,10 @@ function isYouTubeVideoUrl(url: string): boolean {
  * Resolve an item's publication date: the ISO date `rss-parser` computes
  * first, then the raw date string, then the fetch-time fallback.
  */
-function resolvePublishedAt(item: Record<string, unknown>, fetchTime: Date): Date {
+function resolvePublishedAt(
+  item: Record<string, unknown>,
+  fetchTime: Date,
+): Date {
   const iso = item.isoDate;
   if (typeof iso === "string") {
     const parsed = new Date(iso);

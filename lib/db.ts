@@ -23,7 +23,7 @@
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { ParsedItem } from "./normalize/parse";
+import type { ParsedItem } from "./normalize/parse.ts";
 
 /** A row from the shared `sources` table (camelCase). */
 export interface Source {

@@ -110,7 +110,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [x] 5. Save feed fixtures; parse and normalize module with unit tests (criteria 3–5).
 - [x] 6. Database writes (insert on conflict do nothing, source status updates).
 - [x] 7. Embedding module (batching, retry on next run).
-- [ ] 8. `pnpm ingest` command with per-source summary.
+- [x] 8. `pnpm ingest` command with per-source summary.
 - [ ] 9. RLS tests (criterion 2).
 - [ ] 10. GitHub Actions workflow for hourly ingestion; add repository secrets; verify with a manual run (criterion 12).
 - [ ] 11. Cross-lingual check script; record the result in `docs/ai-log.md`.

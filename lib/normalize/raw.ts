@@ -17,7 +17,7 @@
  * description's CDATA cannot produce phantom fields.
  */
 
-import { decodeEntities } from "./text";
+import { decodeEntities } from "./text.ts";
 
 /**
  * Extract the inner content of the first `tag` element in a block, unwrapping
@@ -43,16 +43,10 @@ function unwrapCdata(inner: string): string {
  * `rss` feeds use `<item>…</item>`; Atom feeds use `<entry>…</entry>`.
  * These elements do not nest, so a non-greedy match per element is exact.
  */
-export function splitItemBlocks(
-  xml: string,
-  format: "rss" | "atom",
-): string[] {
+export function splitItemBlocks(xml: string, format: "rss" | "atom"): string[] {
   const tag = format === "rss" ? "item" : "entry";
   const blocks: string[] = [];
-  const pattern = new RegExp(
-    `<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}>`,
-    "g",
-  );
+  const pattern = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}>`, "g");
   for (const match of xml.matchAll(pattern)) {
     blocks.push(match[0]);
   }
@@ -65,7 +59,9 @@ export function splitItemBlocks(
  */
 export function extractAtomCategories(block: string): string[] {
   const terms: string[] = [];
-  for (const match of block.matchAll(/<category\b([^>]*?)(?:\/>|>[\s\S]*?<\/category>)/gi)) {
+  for (const match of block.matchAll(
+    /<category\b([^>]*?)(?:\/>|>[\s\S]*?<\/category>)/gi,
+  )) {
     const attrs = match[1] ?? "";
     const term = attrValue(attrs, "term");
     if (term != null) terms.push(decodeEntities(term).trim());
@@ -75,10 +71,7 @@ export function extractAtomCategories(block: string): string[] {
 
 function attrValue(attrs: string, name: string): string | null {
   const match = attrs.match(
-    new RegExp(
-      `\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)')`,
-      "i",
-    ),
+    new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, "i"),
   );
   if (!match) return null;
   return match[2] ?? match[3] ?? null;

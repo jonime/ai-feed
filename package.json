@@ -6,6 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start --port 3001",
+    "ingest": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --env-file-if-exists=.env.local scripts/ingest.mts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
