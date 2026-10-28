@@ -29,4 +29,14 @@ Next.js (App Router, TypeScript) on Vercel · Supabase Postgres + pgvector · Su
 
 ## Getting started
 
-Setup instructions will be added once the project is scaffolded (spec 001, task 1).
+Copy `.env.example` to `.env.local` and set the local Supabase URL, anon key, service-role key, and OpenAI key as needed. Keep the service-role and OpenAI keys server-side; never expose them through `NEXT_PUBLIC_` variables.
+
+For cloud work, keep production values in the separate, gitignored root file `.env.production.local`. The `pnpm` scripts currently load `.env.local`, so they do not switch to production automatically. To deliberately run a Node script with production credentials, pass the file explicitly, for example:
+
+```sh
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
+	--experimental-strip-types \
+	--env-file=.env.production.local scripts/ingest.mts
+```
+
+That ingestion command writes to the selected database. Confirm the target project before running it; use production for read-only checks unless a production write is explicitly intended. Never print or commit either environment file.

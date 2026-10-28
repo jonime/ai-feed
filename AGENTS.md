@@ -34,6 +34,14 @@ AI-powered personal content feed: ingests Finnish and English RSS/Atom/YouTube f
 - The service-role key and OpenAI key are used only in server-side code and scripts; never in client components or `NEXT_PUBLIC_` variables. Never commit secrets; `.env*` files (except `.env.example`) are gitignored.
 - Fetching external URLs: http/https only, timeouts, response size limits; block private/internal addresses when the URL comes from users or an LLM.
 
+## Supabase environment selection
+
+- `.env.local` is the default for local development and is loaded by the current `pnpm` scripts. Do not assume it points to the cloud project.
+- Keep cloud credentials separately in the ignored root `.env.production.local`; never copy them into `.env.local` or commit either file.
+- For a script that should use production, pass `--env-file=.env.production.local` explicitly to Node. Existing package scripts that specify `.env.local` will continue to use local credentials.
+- Before database-backed work, confirm which project the selected environment targets. Prefer local Supabase for writes and tests; use production only when explicitly requested and keep analysis read-only unless the user authorizes a write.
+- Never print credentials. The Supabase service-role key is server-side only and must not use a `NEXT_PUBLIC_` variable.
+
 ## Conventions
 
 - Never edit an applied migration; add a new one.
