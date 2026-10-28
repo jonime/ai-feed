@@ -40,3 +40,61 @@ node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
 ```
 
 That ingestion command writes to the selected database. Confirm the target project before running it; use production for read-only checks unless a production write is explicitly intended. Never print or commit either environment file.
+
+## Google sign-in setup
+
+This configures OAuth for spec 002. The login page and application callback route are added in task 3; completing this setup alone does not enable sign-in in the UI.
+
+### Google Cloud
+
+1. Select or create a project in [Google Cloud Console](https://console.cloud.google.com/), then open **Google Auth Platform**.
+2. Configure **Branding** with the app name and support/developer email. In **Audience**, choose **External**, keep the publishing status **Testing**, and add each permitted Google account under **Test users**. Do not publish the consent screen during the course.
+3. In **Data Access**, configure only `openid`, `userinfo.email`, and `userinfo.profile`; no additional Google API scopes are needed.
+4. In **Clients**, create an OAuth client of type **Web application**. Add `http://localhost:3001` and `http://127.0.0.1:3001` as **Authorized JavaScript origins**.
+5. Add `http://127.0.0.1:55321/auth/v1/callback` as an **Authorized redirect URI**. This repository uses Supabase API port **55321**, not the CLI default 54321. For hosted Supabase, also add the exact callback URL shown by that project's Google provider settings, usually `https://<project-ref>.supabase.co/auth/v1/callback`.
+6. Store the client ID and secret privately as described below. Never paste the secret into chat, tracked files, or a `NEXT_PUBLIC_` variable. Separate OAuth clients for local and hosted Supabase can be used to keep credentials separate.
+
+### Local Supabase
+
+The Supabase CLI reads `env(...)` references in [supabase/config.toml](supabase/config.toml) from shell variables or a root `.env` file. It does **not** load Next.js's `.env.local`. Create the gitignored root `.env` with just the OAuth values from your local-development Google web client:
+
+```dotenv
+SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+Do not copy production Supabase credentials into this file or `.env.local`. Keep the app's local Supabase URL and keys in `.env.local`; the URL is `http://127.0.0.1:55321`. The variable names are also listed in [.env.example](.env.example). Email/password authentication stays enabled for local automated tests; Google is the only planned UI sign-in method.
+
+With Docker running, apply the auth configuration by starting (or restarting) the local stack:
+
+```sh
+supabase stop
+supabase start
+pnpm dev
+```
+
+Stopping without `--no-backup` preserves local data; do not use `supabase db reset` just to change OAuth configuration. CLI startup/status output can contain local keys, so do not paste it into chat or logs. If OAuth credentials are missing, configure them before starting the stack. For database-only automated testing without Google, temporarily supply non-secret placeholder values through the shell; these do not enable real Google sign-in.
+
+Open the app at `http://localhost:3001` and use the same hostname throughout each sign-in attempt; mixing `localhost` and `127.0.0.1` loses the app's PKCE verifier cookie. The configured app callback allowlist covers both hostnames, without wildcards. If you change the app port, update both the Supabase redirect allowlist and the Google client origins.
+
+There are two distinct callbacks:
+
+| Redirect                         | URL                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| Google to local Supabase Auth    | `http://127.0.0.1:55321/auth/v1/callback`                               |
+| Supabase Auth to the Next.js app | `http://localhost:3001/auth/callback` (or the matching `127.0.0.1` URL) |
+
+Google's authorized redirect URI must be the **Supabase** callback, not the Next.js `/auth/callback`. Leave **Skip nonce check** disabled for the web OAuth flow.
+
+### Hosted Supabase
+
+Local CLI configuration does not configure the hosted project. Perform these steps manually in the intended [Supabase Dashboard](https://supabase.com/dashboard); do not run a remote config push as part of local setup.
+
+1. Confirm the project reference, then open **Authentication > Sign In / Providers > Google**. Enable Google and enter the web client ID and secret for that environment. Keep nonce checking enabled and email required.
+2. Copy the provider's displayed callback URL into the matching Google Cloud web client's **Authorized redirect URIs**. It is the hosted Supabase callback, not the local one.
+3. For testing the local app against hosted Auth, set **Authentication > URL Configuration > Site URL** to `http://localhost:3001` and add the exact app redirect URLs `http://localhost:3001/auth/callback` and `http://127.0.0.1:3001/auth/callback`. Keep the Google consent screen in **Testing** with explicitly listed test users.
+4. Keep hosted app credentials in the ignored `.env.production.local`, separate from local credentials. The normal `pnpm dev` flow uses `.env.local`; do not swap its contents to test hosted Auth. Vercel deployment, selecting the hosted app environment, and production app redirect URLs are deferred to spec 004.
+
+After task 3, verify locally that a listed Google test user can sign in, return to `/`, see their email, and sign out. A Google `redirect_uri_mismatch` error means its registered Supabase callback does not exactly match; a missing PKCE verifier usually means the app hostname changed or its cookie was lost.
+
+References: [Supabase Google Auth](https://supabase.com/docs/guides/auth/social-login/auth-google), [local config and secrets](https://supabase.com/docs/guides/local-development/managing-config), [redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).
