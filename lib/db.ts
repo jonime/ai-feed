@@ -94,6 +94,16 @@ export interface IngestDb {
   /** All sources with `is_active = true`, ordered by name. */
   listActiveSources(): Promise<Source[]>;
 
+  /** Content rows with no embedding, ordered by creation time. */
+  listUnembeddedItems(): Promise<UnembeddedItem[]>;
+
+  /** Save a vector only if this item is still unembedded. */
+  saveEmbedding(
+    id: string,
+    embedding: number[],
+    model: string,
+  ): Promise<boolean>;
+
   /**
    * Insert one source's parsed items, deduplicated on the normalized
    * `url` (`insert … on conflict (url) do nothing`; the first source to
@@ -108,6 +118,13 @@ export interface IngestDb {
 
   /** Apply a status patch to one `sources` row. */
   updateSource(id: string, patch: SourceStatusPatch): Promise<void>;
+}
+
+/** Content fields needed to create an embedding. */
+export interface UnembeddedItem {
+  id: string;
+  title: string;
+  summary: string | null;
 }
 
 /* ------------------------------------------------------------------ *
@@ -319,6 +336,43 @@ export function createIngestDb(env: IngestDbEnv = process.env): IngestDb {
         throw new Error(`loading active sources failed: ${error.message}`);
       }
       return (data as RawSourceRow[]).map(toSource);
+    },
+
+    async listUnembeddedItems() {
+      const pageSize = 1000;
+      const items: UnembeddedItem[] = [];
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error } = await client
+          .from("content_items")
+          .select("id,title,summary")
+          .is("embedding", null)
+          .order("created_at")
+          .range(offset, offset + pageSize - 1);
+        if (error) {
+          throw new Error(
+            `loading unembedded content items failed: ${error.message}`,
+          );
+        }
+        const page = data as UnembeddedItem[];
+        items.push(...page);
+        if (page.length < pageSize) return items;
+      }
+    },
+
+    async saveEmbedding(id, embedding, model) {
+      const vector = `[${embedding.join(",")}]`;
+      const { data, error } = await client
+        .from("content_items")
+        .update({ embedding: vector, embedding_model: model })
+        .eq("id", id)
+        .is("embedding", null)
+        .select("id");
+      if (error) {
+        throw new Error(
+          `saving embedding for content item ${id} failed: ${error.message}`,
+        );
+      }
+      return (data?.length ?? 0) > 0;
     },
 
     async insertItems(source, items) {

@@ -35,6 +35,14 @@ class FakeIngestDb implements IngestDb {
   }> = [];
   updates: Array<{ id: string; patch: SourceStatusPatch }> = [];
 
+  async listUnembeddedItems() {
+    return [];
+  }
+
+  async saveEmbedding(): Promise<boolean> {
+    return false;
+  }
+
   async listActiveSources(): Promise<Source[]> {
     return this.sources.filter((s) => s.isActive);
   }
@@ -46,10 +54,7 @@ class FakeIngestDb implements IngestDb {
     this.insertCalls.push({ source, items });
     let inserted = 0;
     for (const it of items) {
-      if (
-        !this.insertedUrls.has(it.url) &&
-        !this.existingUrls.has(it.url)
-      ) {
+      if (!this.insertedUrls.has(it.url) && !this.existingUrls.has(it.url)) {
         this.insertedUrls.add(it.url);
         inserted++;
       }
@@ -165,20 +170,17 @@ describe("recordSourceOutcome", () => {
 
 describe("toContentItemRows", () => {
   it("maps a parsed item to a content_items row using the source's language", () => {
-    const [row] = toContentItemRows(
-      { id: "src-1", language: "fi" },
-      [
-        item({
-          url: "https://yle.fi/a/1",
-          title: "Test item",
-          summary: "A summary",
-          type: "video",
-          categories: ["Uutiset", "Tiede"],
-          thumbnailUrl: "https://i.ytimg.com/vi/abc/hqdefault.jpg",
-          publishedAt: new Date("2026-10-28T08:00:00.000Z"),
-        }),
-      ],
-    );
+    const [row] = toContentItemRows({ id: "src-1", language: "fi" }, [
+      item({
+        url: "https://yle.fi/a/1",
+        title: "Test item",
+        summary: "A summary",
+        type: "video",
+        categories: ["Uutiset", "Tiede"],
+        thumbnailUrl: "https://i.ytimg.com/vi/abc/hqdefault.jpg",
+        publishedAt: new Date("2026-10-28T08:00:00.000Z"),
+      }),
+    ]);
     expect(row).toEqual({
       source_id: "src-1",
       type: "video",
@@ -193,22 +195,18 @@ describe("toContentItemRows", () => {
   });
 
   it("stores an empty summary as null", () => {
-    const [row] = toContentItemRows(
-      { id: "src-1", language: "en" },
-      [item({ summary: "" })],
-    );
+    const [row] = toContentItemRows({ id: "src-1", language: "en" }, [
+      item({ summary: "" }),
+    ]);
     expect(row?.summary).toBeNull();
   });
 
   it("skips items without a usable http(s) URL", () => {
-    const rows = toContentItemRows(
-      { id: "src-1", language: "en" },
-      [
-        item({ url: "" }),
-        item({ url: "mailto:someone@example.com" }),
-        item({ url: "https://yle.fi/a/2" }),
-      ],
-    );
+    const rows = toContentItemRows({ id: "src-1", language: "en" }, [
+      item({ url: "" }),
+      item({ url: "mailto:someone@example.com" }),
+      item({ url: "https://yle.fi/a/2" }),
+    ]);
     expect(rows.map((r) => r.url)).toEqual(["https://yle.fi/a/2"]);
   });
 });
