@@ -1,0 +1,24 @@
+[
+  {
+    "id": "ai-software",
+    "description": "AI and software, including related Finnish science and engineering.",
+    "likedItemIds": [
+      "b04faa15-b50e-40d8-90d2-ee125e32e838",
+      "1d4c1372-4a49-4643-9024-5acae084a17f",
+      "bf5c03f2-1ac9-4e81-b41e-7a6016bcf770",
+      "a4f59395-0bd6-4550-8de0-4422108b7ee0",
+      "17415c8e-a92d-47ee-90ca-2f5ac5b31512"
+    ]
+  },
+  {
+    "id": "science-environment",
+    "description": "Space, science, and environmental change, including Finnish energy stories.",
+    "likedItemIds": [
+      "bdc21e1a-8f5c-49ca-af72-b250d56cecee",
+      "91012f10-c1fc-4402-875f-0c7ce25b4a5a",
+      "288840df-89fe-4a38-b280-e9110ae47a75",
+      "1197c210-97b2-48d8-9bbc-07c7cf90282a",
+      "e5f1d066-6d48-4b48-a65f-f7b04fe1dfce"
+    ]
+  }
+]

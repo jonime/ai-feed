@@ -1,0 +1,49 @@
+{
+  "perPersona": [
+    {
+      "persona": "ai-software",
+      "method": "nearest-liked",
+      "relevant": 9,
+      "precisionAt10": 0.9
+    },
+    {
+      "persona": "ai-software",
+      "method": "average-vector",
+      "relevant": 10,
+      "precisionAt10": 1
+    },
+    {
+      "persona": "ai-software",
+      "method": "newest-first",
+      "relevant": 4,
+      "precisionAt10": 0.4
+    },
+    {
+      "persona": "science-environment",
+      "method": "nearest-liked",
+      "relevant": 4,
+      "precisionAt10": 0.4
+    },
+    {
+      "persona": "science-environment",
+      "method": "average-vector",
+      "relevant": 10,
+      "precisionAt10": 1
+    },
+    {
+      "persona": "science-environment",
+      "method": "newest-first",
+      "relevant": 2,
+      "precisionAt10": 0.2
+    }
+  ],
+  "macroAverage": {
+    "nearest-liked": 0.65,
+    "average-vector": 1,
+    "newest-first": 0.30000000000000004
+  },
+  "gate1": {
+    "passed": false,
+    "decision": "Investigate embedding input, lambda, and sample; use average-vector as fallback if needed."
+  }
+}

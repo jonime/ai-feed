@@ -21,3 +21,4 @@ next-env.d.ts
 
 # Local files
 .DS_Store
+evaluation/early-ranking/.answer-key.json
