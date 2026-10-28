@@ -108,7 +108,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [x] 3. Seed migration for `sources` from feeds.md.
 - [x] 4. Fetch module (conditional GET, timeout, size limit, concurrency).
 - [x] 5. Save feed fixtures; parse and normalize module with unit tests (criteria 3–5).
-- [ ] 6. Database writes (insert on conflict do nothing, source status updates).
+- [x] 6. Database writes (insert on conflict do nothing, source status updates).
 - [ ] 7. Embedding module (batching, retry on next run).
 - [ ] 8. `pnpm ingest` command with per-source summary.
 - [ ] 9. RLS tests (criterion 2).
