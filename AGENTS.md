@@ -30,6 +30,8 @@ AI-powered personal content feed: ingests Finnish and English RSS/Atom/YouTube f
 
 - Every table has RLS enabled. Shared tables: `select` for `authenticated` only, no write policies. Per-user tables: owner-only (`user_id = (select auth.uid())`).
 - Every per-user table ships with automated two-user tests (user A cannot read or modify user B's rows) in the same spec that creates it.
+- Security integration tests must actually run: a spec that adds them is done only when `pnpm test:integration` passes against local Supabase with 0 skipped.
+- Authorization uses verified identity (`supabase.auth.getClaims()` or `getUser()`), never `getSession()` alone. Every server action and route handler checks the user itself; request-level redirects are not authorization.
 - Database functions read the user from `auth.uid()`; they never take a `user_id` parameter and run as `SECURITY INVOKER`. Views use `security_invoker = true`.
 - The service-role key and OpenAI key are used only in server-side code and scripts; never in client components or `NEXT_PUBLIC_` variables. Never commit secrets; `.env*` files (except `.env.example`) are gitignored.
 - Fetching external URLs: http/https only, timeouts, response size limits; block private/internal addresses when the URL comes from users or an LLM.

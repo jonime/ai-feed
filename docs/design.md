@@ -246,11 +246,11 @@ One row per user and item; the current state only (latest action wins). Undo del
 | -------------------------- | --------------------------- | -------------------------------------------------------- |
 | `user_id`                  | `uuid` FK → `auth.users`    | Part of PK; defaults to `auth.uid()`                     |
 | `item_id`                  | `uuid` FK → `content_items` | Part of PK                                               |
-| `kind`                     | `text`                      | `like`, `not_interested`, or `seen`                      |
-| `via`                      | `text`                      | `button` or `swipe`; used to analyze accidental gestures |
-| `created_at`, `updated_at` | `timestamptz`               |                                                          |
+| `kind`                     | `text` not null             | `like`, `not_interested`, or `seen`                      |
+| `via`                      | `text` not null             | `button` or `swipe`; used to analyze accidental gestures |
+| `created_at`, `updated_at` | `timestamptz` not null      | Default `now()`; trigger updates `updated_at`            |
 
-RLS: owner-only `select`, `insert`, `update`, `delete`; covered by two-user tests.
+RLS: owner-only `select`, `insert`, `update (kind, via)`, `delete`; covered by two-user tests. Writes go through `set_feedback(item_id, kind, via)` (`SECURITY INVOKER`, user from `auth.uid()`), because a client-side upsert would also try to update `item_id`.
 
 ### 6.4 Later tables
 
