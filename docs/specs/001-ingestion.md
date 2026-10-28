@@ -104,7 +104,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 ## Tasks
 
 - [x] 1. Scaffold Next.js + TypeScript with pnpm, Vitest, ESLint; add `.env.example` and `.gitignore`; confirm script names in AGENTS.md.
-- [ ] 2. Initialize Supabase CLI and link the cloud project; migration enabling pgvector and creating `sources` and `content_items` with RLS.
+- [x] 2. Initialize Supabase CLI and link the cloud project; migration enabling pgvector and creating `sources` and `content_items` with RLS.
 - [ ] 3. Seed migration for `sources` from feeds.md.
 - [ ] 4. Fetch module (conditional GET, timeout, size limit, concurrency).
 - [ ] 5. Save feed fixtures; parse and normalize module with unit tests (criteria 3–5).
