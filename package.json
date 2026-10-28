@@ -10,6 +10,8 @@
     "ranking:freeze": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --env-file-if-exists=.env.local scripts/freeze-ranking-sample.mts",
     "ranking:export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --env-file-if-exists=.env.local scripts/export-ranking-judging.mts",
     "ranking:score": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/score-ranking-judging.mts",
+    "ranking:export:centered": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --env-file-if-exists=.env.local scripts/export-centered-ranking.mts",
+    "ranking:score:centered": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/score-centered-ranking.mts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

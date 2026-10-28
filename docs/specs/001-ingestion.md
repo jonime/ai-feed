@@ -122,7 +122,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [x] 10. GitHub Actions workflow for hourly ingestion; add repository secrets; verify with a manual run (criterion 12).
 - [ ] 11. Cross-lingual check script for raw and centered vectors; record the result in `docs/ai-log.md`.
 - [x] 12. Early ranking experiment scripts (export for blind judging, score judged CSV); record the result and gate 1 decision.
-- [ ] 13. Gate 1 re-run with language centering: add centered variants to the ranking script, export only unjudged items for blind judging, score, and record the final gate 1 decision (criterion 13).
+- [x] 13. Gate 1 re-run with language centering: add centered variants to the ranking script, export only unjudged items for blind judging, score, and record the final gate 1 decision (criterion 13).
 
 ## Decisions
 

@@ -6,6 +6,17 @@ export const EARLY_RANKING_METHODS = [
 
 export type EarlyRankingMethod = (typeof EARLY_RANKING_METHODS)[number];
 
+export const CENTERED_RANKING_METHODS = [
+  "nearest-liked-raw",
+  "average-vector-raw",
+  "nearest-liked-centered",
+  "average-vector-centered",
+  "newest-first",
+] as const;
+
+export type CenteredRankingMethod = (typeof CENTERED_RANKING_METHODS)[number];
+export type RankingLanguage = "fi" | "en";
+
 export interface EarlyRankingItem {
   id: string;
   title: string;
@@ -14,6 +25,37 @@ export interface EarlyRankingItem {
   url: string;
   publishedAt: string;
   embedding: number[];
+}
+
+export interface CenteredRankingAnswerKey {
+  languageMeans: Record<RankingLanguage, number[]>;
+  personas: Record<
+    string,
+    Record<CenteredRankingMethod, Array<{ url: string; rank: number }>>
+  >;
+}
+
+export interface CenteredJudgingRow {
+  persona: string;
+  url: string;
+  relevant: string;
+}
+
+export interface CenteredRankingScore {
+  persona: string;
+  method: CenteredRankingMethod;
+  relevant: number;
+  precisionAt10: number;
+}
+
+export interface CenteredRankingResults {
+  perPersona: CenteredRankingScore[];
+  macroAverage: Record<CenteredRankingMethod, number>;
+  gate1: {
+    passed: boolean;
+    decision: string;
+  };
+  languageMeans: Record<RankingLanguage, number[]>;
 }
 
 export interface JudgingRow {
@@ -85,6 +127,33 @@ function meanEmbedding(items: EarlyRankingItem[]): number[] {
     }
   }
   return mean.map((value) => value / items.length);
+}
+
+export function centerEmbeddingsByLanguage(items: EarlyRankingItem[]): {
+  means: Record<RankingLanguage, number[]>;
+  items: EarlyRankingItem[];
+} {
+  const means = {
+    fi: meanEmbedding(items.filter((item) => item.language === "fi")),
+    en: meanEmbedding(items.filter((item) => item.language === "en")),
+  };
+  const centeredItems = items.map((item) => {
+    const mean = means[item.language];
+    const centered = item.embedding.map((value, index) => {
+      const meanValue = mean[index];
+      if (meanValue === undefined)
+        throw new Error("language mean has an inconsistent dimension");
+      return value - meanValue;
+    });
+    const norm = Math.sqrt(
+      centered.reduce((sum, value) => sum + value * value, 0),
+    );
+    return {
+      ...item,
+      embedding: norm === 0 ? centered : centered.map((value) => value / norm),
+    };
+  });
+  return { means, items: centeredItems };
 }
 
 export function rankEarlyItems(
@@ -254,5 +323,89 @@ export function scoreEarlyRanking(
         ? "Keep nearest-liked; it meets or beats average-vector and beats newest-first."
         : "Investigate embedding input, lambda, and sample; use average-vector as fallback if needed.",
     },
+  };
+}
+
+export function scoreCenteredEarlyRanking(
+  judgingRows: CenteredJudgingRow[],
+  answerKey: CenteredRankingAnswerKey,
+): CenteredRankingResults {
+  const relevance = new Map<string, boolean>();
+  for (const row of judgingRows) {
+    const key = `${row.persona}\u0000${row.url}`;
+    if (relevance.has(key))
+      throw new Error(`duplicate judgment for ${row.persona}/${row.url}`);
+    if (row.relevant !== "0" && row.relevant !== "1") {
+      throw new Error(`relevant must be 0 or 1 for ${row.persona}/${row.url}`);
+    }
+    relevance.set(key, row.relevant === "1");
+  }
+
+  const perPersona: CenteredRankingScore[] = [];
+  for (const [persona, methods] of Object.entries(answerKey.personas)) {
+    for (const method of CENTERED_RANKING_METHODS) {
+      const rankedItems = methods[method];
+      if (!rankedItems || rankedItems.length !== 10) {
+        throw new Error(
+          `${persona}/${method} must have exactly 10 ranked items`,
+        );
+      }
+      let relevantCount = 0;
+      for (const rankedItem of rankedItems) {
+        const judgedRelevant = relevance.get(
+          `${persona}\u0000${rankedItem.url}`,
+        );
+        if (judgedRelevant === undefined) {
+          throw new Error(`missing judgment for ${persona}/${rankedItem.url}`);
+        }
+        if (judgedRelevant) relevantCount += 1;
+      }
+      perPersona.push({
+        persona,
+        method,
+        relevant: relevantCount,
+        precisionAt10: relevantCount / 10,
+      });
+    }
+  }
+
+  const macroAverage = Object.fromEntries(
+    CENTERED_RANKING_METHODS.map((method) => {
+      const scores = perPersona.filter((score) => score.method === method);
+      if (scores.length === 0)
+        throw new Error("answer key must contain personas");
+      return [
+        method,
+        scores.reduce((sum, score) => sum + score.precisionAt10, 0) /
+          scores.length,
+      ];
+    }),
+  ) as Record<CenteredRankingMethod, number>;
+  const bestNearestLikedMethod =
+    macroAverage["nearest-liked-centered"] >= macroAverage["nearest-liked-raw"]
+      ? "nearest-liked-centered"
+      : "nearest-liked-raw";
+  const pairedAverageMethod =
+    bestNearestLikedMethod === "nearest-liked-centered"
+      ? "average-vector-centered"
+      : "average-vector-raw";
+  const bestAverageVectorMethod =
+    macroAverage["average-vector-centered"] > macroAverage["average-vector-raw"]
+      ? "average-vector-centered"
+      : "average-vector-raw";
+  const passed =
+    macroAverage[bestNearestLikedMethod] >= macroAverage[pairedAverageMethod] &&
+    macroAverage[bestNearestLikedMethod] > macroAverage["newest-first"];
+
+  return {
+    perPersona,
+    macroAverage,
+    gate1: {
+      passed,
+      decision: passed
+        ? `Keep ${bestNearestLikedMethod}; it meets or beats ${pairedAverageMethod} and beats newest-first.`
+        : `Use ${bestAverageVectorMethod} as the gate 1 baseline; nearest-liked does not meet both criteria.`,
+    },
+    languageMeans: answerKey.languageMeans,
   };
 }

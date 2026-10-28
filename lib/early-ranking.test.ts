@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  CENTERED_RANKING_METHODS,
+  centerEmbeddingsByLanguage,
   encodeCsv,
   parseCsv,
   rankEarlyItems,
+  scoreCenteredEarlyRanking,
   scoreEarlyRanking,
+  type CenteredRankingAnswerKey,
   type EarlyRankingItem,
   type RankingAnswerKey,
 } from "./early-ranking";
@@ -47,6 +51,86 @@ describe("early ranking", () => {
         ({ id }) => id,
       ),
     ).toEqual(["middle", "near-a", "near-b"]);
+  });
+
+  it("centers and normalizes embeddings within each language", () => {
+    const mixedItems = [
+      {
+        ...item("fi-a", [2, 0], "2026-01-01T00:00:00Z"),
+        language: "fi" as const,
+      },
+      {
+        ...item("fi-b", [0, 2], "2026-01-02T00:00:00Z"),
+        language: "fi" as const,
+      },
+      {
+        ...item("en-a", [3, 0], "2026-01-03T00:00:00Z"),
+        language: "en" as const,
+      },
+      {
+        ...item("en-b", [3, 2], "2026-01-04T00:00:00Z"),
+        language: "en" as const,
+      },
+    ];
+
+    const centered = centerEmbeddingsByLanguage(mixedItems);
+
+    expect(centered.means).toEqual({ fi: [1, 1], en: [3, 1] });
+    expect(centered.items[0]?.embedding[0]).toBeCloseTo(Math.SQRT1_2);
+    expect(centered.items[0]?.embedding[1]).toBeCloseTo(-Math.SQRT1_2);
+    expect(centered.items[1]?.embedding[0]).toBeCloseTo(-Math.SQRT1_2);
+    expect(centered.items[1]?.embedding[1]).toBeCloseTo(Math.SQRT1_2);
+    expect(centered.items.slice(2).map(({ embedding }) => embedding)).toEqual([
+      [0, -1],
+      [0, 1],
+    ]);
+  });
+
+  it("scores centered variants using previous and newly collected judgments", () => {
+    const urls = Array.from(
+      { length: 10 },
+      (_, index) => `https://example.test/${index}`,
+    );
+    const personas = Object.fromEntries(
+      CENTERED_RANKING_METHODS.map((method) => [
+        method,
+        urls.map((url, index) => ({ url, rank: index + 1 })),
+      ]),
+    ) as CenteredRankingAnswerKey["personas"][string];
+    const answerKey: CenteredRankingAnswerKey = {
+      languageMeans: { fi: [1, 2], en: [3, 4] },
+      personas: { p1: personas },
+    };
+    const oldJudgments = urls.slice(0, 5).map((url, index) => ({
+      persona: "p1",
+      url,
+      relevant: index < 2 ? "1" : "0",
+    }));
+    const newJudgments = urls.slice(5).map((url, index) => ({
+      persona: "p1",
+      url,
+      relevant: index < 4 ? "1" : "0",
+    }));
+
+    const result = scoreCenteredEarlyRanking(
+      [...oldJudgments, ...newJudgments],
+      answerKey,
+    );
+
+    expect(result.perPersona).toHaveLength(CENTERED_RANKING_METHODS.length);
+    expect(result.macroAverage).toEqual({
+      "nearest-liked-raw": 0.6,
+      "average-vector-raw": 0.6,
+      "nearest-liked-centered": 0.6,
+      "average-vector-centered": 0.6,
+      "newest-first": 0.6,
+    });
+    expect(result.gate1).toEqual({
+      passed: false,
+      decision:
+        "Use average-vector-raw as the gate 1 baseline; nearest-liked does not meet both criteria.",
+    });
+    expect(result.languageMeans).toEqual(answerKey.languageMeans);
   });
 
   it("uses newest-first with deterministic ties", () => {
