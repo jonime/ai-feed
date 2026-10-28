@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { createBrowserClient, createServerClient } from "@supabase/ssr";
-import { NextRequest } from "next/server";
+import { connection, NextRequest } from "next/server";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { createClient as createBrowserSupabase } from "./client";
 import { createClient as createServerSupabase } from "./server";
@@ -12,6 +12,10 @@ const { cookieStore, getClaims } = vi.hoisted(() => ({
 }));
 
 vi.mock("next/headers", () => ({ cookies: async () => cookieStore }));
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  connection: vi.fn(async () => {}),
+}));
 vi.mock("@supabase/ssr", () => ({
   createBrowserClient: vi.fn(() => ({ browser: true })),
   createServerClient: vi.fn(() => ({ auth: { getClaims } })),
@@ -36,7 +40,10 @@ beforeEach(() => {
   cookieStore.getAll.mockReturnValue([
     { name: "sb-session", value: "old-session" },
   ]);
-  getClaims.mockResolvedValue({ data: null, error: null });
+  getClaims.mockResolvedValue({
+    data: { claims: { sub: "user-a" } },
+    error: null,
+  });
 });
 
 afterEach(() => {
@@ -44,6 +51,25 @@ afterEach(() => {
 });
 
 describe("Supabase clients", () => {
+  it("waits for a real request before initializing server auth callbacks", async () => {
+    let resumeRequest: (() => void) | undefined;
+    vi.mocked(connection).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resumeRequest = resolve;
+        }),
+    );
+
+    const client = createServerSupabase();
+    expect(connection).toHaveBeenCalledExactlyOnceWith();
+    expect(createServerClient).not.toHaveBeenCalled();
+
+    if (!resumeRequest) throw new Error("Request boundary was not reached");
+    resumeRequest();
+    await client;
+    expect(createServerClient).toHaveBeenCalledTimes(1);
+  });
+
   it("creates the browser client with only public configuration", () => {
     createBrowserSupabase();
     expect(createBrowserClient).toHaveBeenCalledWith(
@@ -84,12 +110,56 @@ describe("Supabase clients", () => {
 });
 
 describe("session refresh proxy", () => {
-  it("verifies claims even when no session exists and continues the request", async () => {
+  it("redirects a missing session to login", async () => {
+    getClaims.mockResolvedValueOnce({ data: null, error: null });
     const response = await proxy(new NextRequest("http://localhost:3001/"));
     expect(getClaims).toHaveBeenCalledExactlyOnceWith();
-    expect(response.status).toBe(200);
-    expect(response.headers.get("location")).toBeNull();
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3001/login",
+    );
     expect(response.cookies.getAll()).toEqual([]);
+  });
+
+  it("rejects claims that fail verification even when a subject is present", async () => {
+    getClaims.mockResolvedValueOnce({
+      data: { claims: { sub: "user-a" } },
+      error: new Error("Invalid signature"),
+    });
+    const response = await proxy(new NextRequest("http://localhost:3001/"));
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3001/login",
+    );
+  });
+
+  it.each(["/login", "/auth/callback?code=oauth-code"])(
+    "allows unauthenticated access to %s",
+    async (path) => {
+      getClaims.mockResolvedValueOnce({ data: null, error: null });
+      const response = await proxy(
+        new NextRequest(`http://localhost:3001${path}`),
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+    },
+  );
+
+  it("preserves cookie deletions on redirects without carrying query parameters", async () => {
+    getClaims.mockImplementationOnce(async () => {
+      await serverCookies().setAll?.(
+        [{ name: "sb-session", value: "", options: { path: "/", maxAge: 0 } }],
+        { "Cache-Control": "private, no-store" },
+      );
+      return { data: null, error: null };
+    });
+    const response = await proxy(
+      new NextRequest("http://localhost:3001/?private=value"),
+    );
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3001/login",
+    );
+    expect(response.cookies.get("sb-session")?.maxAge).toBe(0);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("forwards refreshed cookies downstream and to the browser with cache protection", async () => {
@@ -104,6 +174,7 @@ describe("session refresh proxy", () => {
         Expires: "0",
         Pragma: "no-cache",
       });
+      return { data: { claims: { sub: "user-a" } }, error: null };
     });
 
     const response = await proxy(request);
@@ -135,6 +206,7 @@ describe("session refresh proxy", () => {
         [{ name: "sb-verifier", value: "", options: { path: "/", maxAge: 0 } }],
         {},
       );
+      return { data: { claims: { sub: "user-a" } }, error: null };
     });
     const response = await proxy(new NextRequest("http://localhost:3001/"));
     expect(response.cookies.get("sb-session")?.value).toBe("refreshed-session");

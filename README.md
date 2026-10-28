@@ -43,7 +43,7 @@ That ingestion command writes to the selected database. Confirm the target proje
 
 ## Google sign-in setup
 
-This configures OAuth for spec 002. The login page and application callback route are added in task 3; completing this setup alone does not enable sign-in in the UI.
+This configures OAuth for spec 002's Google login page and application callback route. The app runs locally at `http://localhost:3001`.
 
 ### Google Cloud
 
@@ -95,6 +95,6 @@ Local CLI configuration does not configure the hosted project. Perform these ste
 3. For testing the local app against hosted Auth, set **Authentication > URL Configuration > Site URL** to `http://localhost:3001` and add the exact app redirect URLs `http://localhost:3001/auth/callback` and `http://127.0.0.1:3001/auth/callback`. Keep the Google consent screen in **Testing** with explicitly listed test users.
 4. Keep hosted app credentials in the ignored `.env.production.local`, separate from local credentials. The normal `pnpm dev` flow uses `.env.local`; do not swap its contents to test hosted Auth. Vercel deployment, selecting the hosted app environment, and production app redirect URLs are deferred to spec 004.
 
-After task 3, verify locally that a listed Google test user can sign in, return to `/`, see their email, and sign out. A Google `redirect_uri_mismatch` error means its registered Supabase callback does not exactly match; a missing PKCE verifier usually means the app hostname changed or its cookie was lost.
+To verify the setup, visit `/` without a session and check that it redirects to `/login`. A listed Google test user should be able to sign in, return to `/`, see their email, and sign out back to `/login`. A Google `redirect_uri_mismatch` error means its registered Supabase callback does not exactly match; a missing PKCE verifier usually means the app hostname changed or its cookie was lost.
 
 References: [Supabase Google Auth](https://supabase.com/docs/guides/auth/social-login/auth-google), [local config and secrets](https://supabase.com/docs/guides/local-development/managing-config), [redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).

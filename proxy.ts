@@ -27,7 +27,21 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims();
+  const isPublicRoute =
+    request.nextUrl.pathname === "/login" ||
+    request.nextUrl.pathname === "/auth/callback";
+
+  if (!isPublicRoute && (error || !data?.claims?.sub)) {
+    const redirectResponse = NextResponse.redirect(
+      new URL("/login", request.url),
+    );
+    for (const cookie of response.cookies.getAll()) {
+      redirectResponse.cookies.set(cookie);
+    }
+    redirectResponse.headers.set("Cache-Control", "private, no-store");
+    return redirectResponse;
+  }
 
   return response;
 }
