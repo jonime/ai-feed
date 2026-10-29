@@ -15,7 +15,7 @@ AI-powered personal content feed: ingests Finnish and English RSS/Atom/YouTube f
 2. Implement only what the spec asks for. If something is unclear or missing, stop and ask instead of guessing; propose spec changes explicitly.
 3. Each task is done when its acceptance criteria pass and `lint`, `typecheck`, and `test` pass.
 4. Tick off the task in the spec. The human reviews the diff and commits.
-5. Significant AI-assisted steps get a short entry in `docs/ai-log.md`. If the exact model is unknown, ask the user instead of guessing.
+5. Before each edit to `docs/ai-log.md`, ask the user to confirm the exact model for that entry. Never infer or reuse a model from earlier messages or existing log entries, including when the model selector is set to Auto. If the user has not confirmed the model for this entry, do not edit the AI log. Significant AI-assisted steps get a short entry.
 
 ## Stack
 
