@@ -68,6 +68,7 @@ try {
       "lib/db.integration.test.ts",
       "lib/rls.integration.test.ts",
       "lib/feedback.integration.test.ts",
+      "lib/feed.integration.test.ts",
       "--reporter=json",
       `--outputFile=${reportPath}`,
     ],

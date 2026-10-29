@@ -5,12 +5,13 @@ import Login from "../login/page";
 import { signOut } from "./actions";
 import { GET } from "./callback/route";
 
-const { auth, createClient } = vi.hoisted(() => ({
+const { auth, createClient, rpc } = vi.hoisted(() => ({
   auth: {
     getClaims: vi.fn(),
     signOut: vi.fn(),
     exchangeCodeForSession: vi.fn(),
   },
+  rpc: vi.fn(),
   createClient: vi.fn(),
 }));
 
@@ -28,9 +29,10 @@ const verifiedClaims = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  createClient.mockResolvedValue({ auth });
+  createClient.mockResolvedValue({ auth, rpc });
   auth.getClaims.mockResolvedValue(verifiedClaims);
   auth.signOut.mockResolvedValue({ error: null });
+  rpc.mockResolvedValue({ data: [], error: null });
   auth.exchangeCodeForSession.mockResolvedValue({ error: null });
 });
 
@@ -42,6 +44,47 @@ describe("signed-in page", () => {
     expect(auth.getClaims).toHaveBeenCalledExactlyOnceWith();
     expect(html).toContain("user-a@example.com");
     expect(html).toContain("Sign out");
+  });
+
+  it("loads and renders the first feed page with a refresh control", async () => {
+    rpc.mockResolvedValueOnce({
+      data: [
+        {
+          id: "item-1",
+          url: "https://publisher.example/story",
+          title: "A useful article",
+          summary: "A short summary",
+          type: "article",
+          language: "en",
+          thumbnail_url: "https://publisher.example/image.jpg",
+          published_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+          source_name: "Example News",
+          score: 0.9,
+          reason: "similar",
+          because_item_id: "liked-1",
+          because_title: "A liked article",
+        },
+      ],
+      error: null,
+    });
+
+    const html = renderToStaticMarkup(
+      await Home({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("get_feed", { p_limit: 30 });
+    expect(html).toContain("A useful article");
+    expect(html).toContain("Example News");
+    expect(html).toContain("1 hour ago");
+    expect(html).toContain("A short summary");
+    expect(html).toContain("Similar to A liked article, which you liked");
+    expect(html).toContain('href="https://publisher.example/story"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('referrerPolicy="no-referrer"');
+    expect(html).toContain('action="/" method="get"');
+    expect(html).toContain("Refresh feed");
   });
 
   it.each([

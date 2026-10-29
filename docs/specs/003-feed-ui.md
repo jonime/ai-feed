@@ -145,14 +145,14 @@ Each criterion belongs to one task, so tasks can be completed in order.
 
 ## Tasks
 
-- [ ] 1. Migration: `embedding_language_means` with RLS; `pnpm embeddings:means` script (criterion 1).
-- [ ] 2. Migration: `centered_similarity` helper and `get_feed` with eligibility, personalized and cold-start modes, and the defaults block (criterion 2).
-- [ ] 3. `get_feed` integration tests with controlled embeddings (criterion 3).
-- [ ] 4. Feed page: server data loading, cards, explanation text, link guard, Refresh feed (criterion 4).
-- [ ] 5. Infinite scrolling: `loadMoreFeed` server action, sentinel loading, Load more fallback, end-of-feed state (criterion 5).
-- [ ] 6. Action buttons, per-card mutation queue, optimistic updates, undo toast, with unit tests (criterion 6).
-- [ ] 7. Swipe gestures with pure gesture logic and unit tests, using the mutation queue (criterion 7).
-- [ ] 8. `/liked` page with Unlike (criterion 8).
+- [x] 1. Migration: `embedding_language_means` with RLS; `pnpm embeddings:means` script (criterion 1).
+- [x] 2. Migration: `centered_similarity` helper and `get_feed` with eligibility, personalized and cold-start modes, and the defaults block (criterion 2).
+- [x] 3. `get_feed` integration tests with controlled embeddings (criterion 3).
+- [x] 4. Feed page: server data loading, cards, explanation text, link guard, Refresh feed (criterion 4).
+- [x] 5. Infinite scrolling: `loadMoreFeed` server action, sentinel loading, Load more fallback, end-of-feed state (criterion 5).
+- [x] 6. Action buttons, per-card mutation queue, optimistic updates, undo toast, with unit tests (criterion 6).
+- [x] 7. Swipe gestures with pure gesture logic and unit tests, using the mutation queue (criterion 7).
+- [x] 8. `/liked` page with Unlike (criterion 8).
 - [ ] 9. Run `pnpm embeddings:means` on the cloud project, do the manual video check (criterion 9), and update design.md §2 and §6 with the final defaults and the new table.
 
 ## Decisions
