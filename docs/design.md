@@ -44,7 +44,7 @@ Representation:
 - The embedding model must be **multilingual (Finnish + English)** so that interests transfer across languages.
 - The embedding model name is stored with each vector, so embeddings can be regenerated if the model changes.
 - **Language bias:** with `text-embedding-3-small`, texts in the same language are similar just because of the language (random-pair cosine: Finnish–Finnish 0.232, English–English 0.148, Finnish–English 0.077 on 306 items). This favors same-language matches and hurts both nearest-liked scoring and cross-lingual recommendations.
-- **Language centering (candidate fix):** subtract the language's mean embedding and re-normalize. In a first test, random-pair similarity dropped to about 0 for all language pairs and neighbours of a Finnish energy article became topical (including English ones). Means are computed from a large corpus and frozen per embedding model. Whether ranking uses centered vectors is decided by the gate 1 re-run ([spec 001](specs/001-ingestion.md), task 13).
+- **Language centering (decided):** subtract the language's mean embedding before comparing. In a first test, random-pair similarity dropped to about 0 for all language pairs and neighbours of a Finnish energy article became topical (including English ones). In the gate 1 re-run ([spec 001](specs/001-ingestion.md), task 13), nearest-liked on centered vectors reached precision@10 1.00 (raw 0.65, centered average-vector 0.95, newest-first 0.30), so ranking uses centered vectors. Means are computed from the corpus and frozen per embedding model ([spec 003](specs/003-feed-ui.md)).
 
 ## 2. Recommendation
 

@@ -147,7 +147,7 @@ Specs are written just in time: spec N+1 is drafted when spec N reaches its last
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- |
 | [001](specs/001-ingestion.md)     | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
 | [002](specs/002-auth-feedback.md) | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
-| 003                               | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
+| [003](specs/003-feed-ui.md)       | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
 | 004                               | Vercel deployment, allowlist and usage limits                                                               | 4    | 003 nearly done                 |
 | 005                               | Evaluation harness                                                                                          | 5    | During week 4                   |
 | 006                               | Exploration slots and diversity; optional interest summary and click tracking                               | 6    | During week 5                   |
