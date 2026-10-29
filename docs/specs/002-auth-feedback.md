@@ -1,6 +1,6 @@
 # 002 — Google login and feedback storage
 
-**Status:** Approved  
+**Status:** Done
 **Milestone:** Prototype (week 2)  
 **Depends on:** 001 (tables `sources`, `content_items`)  
 **Estimate:** 8 h
@@ -99,7 +99,7 @@ Let users sign in with Google and store their per-item feedback (_Like_, _Not in
 - [x] 4. Migration: `feedback` table, constraints, defaults, trigger, grants, RLS policies, `set_feedback` function (criteria 2 and 4).
 - [x] 5. `pnpm test:integration` script (fails if the environment is missing); schema assertions and two-user RLS integration tests (criteria 2, 3, 4, 6, 8).
 - [x] 6. `setFeedback` / `clearFeedback` server actions with verified identity, input validation, and unit tests (criterion 5).
-- [ ] 7. Verify criterion 7; update design.md §6.3 if the implementation differs.
+- [x] 7. Verify criterion 7; update design.md §6.3 if the implementation differs.
 
 ## Decisions
 
