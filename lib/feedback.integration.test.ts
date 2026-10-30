@@ -16,12 +16,35 @@ const options = {
   },
 };
 
+const feedbackSchemaColumns = [
+  "rls_enabled",
+  "four_owner_policies",
+  "required_columns_not_null",
+  "timestamp_defaults",
+  "user_defaults_to_auth_uid",
+  "authenticated_select",
+  "authenticated_insert",
+  "authenticated_delete",
+  "kind_update",
+  "via_update",
+  "no_table_update",
+  "user_id_immutable",
+  "item_id_immutable",
+  "authenticated_rpc",
+  "anonymous_rpc_denied",
+  "rpc_is_invoker",
+] as const;
+
 function parseSupabaseQueryResult(output: string): { rows: unknown[] } {
   let searchFrom = 0;
+  const observedObjectKeys: string[] = [];
   while (true) {
     const start = output.indexOf("{", searchFrom);
     if (start === -1) {
-      throw new Error("Supabase CLI returned no JSON query result with rows.");
+      const observed = observedObjectKeys.join("; ") || "none";
+      throw new Error(
+        `Supabase CLI returned no query rows object (object keys: ${observed}).`,
+      );
     }
 
     let depth = 0;
@@ -62,6 +85,13 @@ function parseSupabaseQueryResult(output: string): { rows: unknown[] } {
         const rows = candidate.rows;
         if (Array.isArray(rows)) return { rows };
       }
+      if (typeof candidate === "object" && candidate !== null) {
+        const keys = Object.keys(candidate);
+        observedObjectKeys.push(keys.slice(0, 16).join(","));
+        if (feedbackSchemaColumns.every((column) => column in candidate)) {
+          return { rows: [candidate] };
+        }
+      }
       searchFrom = end + 1;
     } catch {
       searchFrom = start + 1;
@@ -76,6 +106,15 @@ describe("parseSupabaseQueryResult", () => {
         'Connecting to local database...\n{"boundary":"id"}\n{"rows":[{"value":"brace } inside"}]}\n{"other":true}',
       ),
     ).toEqual({ rows: [{ value: "brace } inside" }] });
+  });
+
+  it("accepts a direct feedback schema row from the CLI", () => {
+    const row = Object.fromEntries(
+      feedbackSchemaColumns.map((column) => [column, true]),
+    );
+    expect(
+      parseSupabaseQueryResult(`Connecting...\n${JSON.stringify([row])}`),
+    ).toEqual({ rows: [row] });
   });
 });
 
