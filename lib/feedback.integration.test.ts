@@ -158,7 +158,12 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
         ["db", "query", "--local", "--output-format", "json", query],
         { encoding: "utf8" },
       );
-      const row = JSON.parse(output.slice(output.indexOf("{")))
+      const jsonStart = output.indexOf("{");
+      const jsonEnd = output.lastIndexOf("}");
+      if (jsonStart === -1 || jsonEnd < jsonStart) {
+        throw new Error("Supabase CLI did not return a JSON query result.");
+      }
+      const row = JSON.parse(output.slice(jsonStart, jsonEnd + 1))
         .rows[0] as Record<string, boolean>;
       expect(row).toEqual({
         rls_enabled: true,
