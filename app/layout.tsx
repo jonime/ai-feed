@@ -8,7 +8,7 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "AI Feed",
+  title: "AI Nosto",
   description:
     "A personalized feed of Finnish and English news, articles, and videos.",
 };

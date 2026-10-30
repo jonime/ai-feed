@@ -1,4 +1,4 @@
-# AI-Powered Personal Content Discovery
+# AI Nosto — Personal Content Discovery
 
 **Version:** 1.1 — Project plan  
 **Status:** Planning complete — ready for submission  

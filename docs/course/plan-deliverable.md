@@ -1,4 +1,4 @@
-# AI-Powered Personal Content Feed — Project Plan
+# AI Nosto — Project Plan
 
 ## What is the goal of your project? Give at least 1-2 concrete examples what it can achieve.
 

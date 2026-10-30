@@ -14,13 +14,7 @@
  * For the cloud project, also set `SUPABASE_URL` to the project URL. The
  * tests create throwaway rows and clean them up afterwards.
  */
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   createIngestDb,
@@ -60,7 +54,7 @@ describe.skipIf(!enabled || serviceKey == null)(
     }
 
     /** Unique per run, so the tests never collide with real content. */
-    const prefix = `https://ai-feed-integration.example/${Date.now()}`;
+    const prefix = `https://ai-nosto-integration.example/${Date.now()}`;
     let sourceA: Source;
     let sourceB: Source;
 
@@ -180,9 +174,7 @@ describe.skipIf(!enabled || serviceKey == null)(
 
       const { data, error } = await client
         .from("sources")
-        .select(
-          "etag,last_modified,last_fetched_at,last_success_at,last_error",
-        )
+        .select("etag,last_modified,last_fetched_at,last_success_at,last_error")
         .eq("id", sourceA.id)
         .single();
       expect(error).toBeNull();
