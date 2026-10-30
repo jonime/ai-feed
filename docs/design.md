@@ -65,6 +65,8 @@ $$
 - Signal precedence per item: explicit feedback overrides clicks. If an item is liked or marked _Not interested_, only that signal counts (the latest explicit action wins). Clicks count only for items without explicit feedback.
 - Click tracking is optional (see the cut order in [plan.md §9](plan.md#9-decision-gates-and-cut-order)); the recommender works with explicit feedback alone.
 
+Prototype implementation (spec 003): only explicit likes and _Not interested_ feedback are scoring signals. Each set contains at most the 200 most recently updated eligible items of the caller; likes have weight 1 and the dislike penalty is $\lambda = 0.5$. Similarity uses language-centered embeddings of `text-embedding-3-small@512` only. An eligible item has an embedding and a matching `(embedding_model, language)` mean row. Zero-length centered vectors have similarity 0. Newly embedded items use the existing frozen mean immediately; recomputing the means is not required for each ingestion run.
+
 Why this approach:
 
 - Handles multiple unrelated interests (an averaged profile of "Linux + astronomy" matches neither well).
@@ -73,16 +75,17 @@ Why this approach:
 
 ### 2.2 Final ranking and exploration
 
-- Final score combines interest score and a recency boost (news loses relevance within days).
-- A diversity step (MMR) prevents near-duplicate items from filling the list.
-- Each feed page is composed of slots (initial values, tuned during evaluation):
+- The prototype's final score is interest plus $\beta \cdot 0.5^{\text{age}/h}$, with $\beta = 0.1$. The half-life $h$ is 24 hours for articles and 7 days for videos. Candidate windows are 7 days for articles and 30 days for videos; all rated items are excluded.
+- `get_feed` runs as `SECURITY INVOKER`, reads identity from `auth.uid()`, and is executable by authenticated users only. Pages contain 30 items; later pages exclude already shown IDs instead of using offsets. The limit is clamped to 1-100 and exclusions to 1,000 IDs.
+- These defaults are kept together in the SQL function and will be tuned in week 6. Cards already displayed do not reorder; refreshing reloads the ranking, and subsequent pages use the latest feedback.
+- Diversity re-ranking (MMR) and exploration slots are deferred to spec 006, not part of the prototype. The planned slot distribution is:
   - ~70% best-matching items
   - ~20% related but unfamiliar items (moderate similarity band)
   - ~10% exploratory items (topics/sources the user rarely engages with)
 
 ### 2.3 Cold start
 
-With an empty profile, the feed shows recent items balanced across sources and topics. Personalization starts after the first few likes.
+With no eligible likes, the prototype round-robins sources, newest first within each source. Candidates with similarity at least $\theta = 0.4$ to any eligible _Not interested_ signal follow all other candidates, with source round-robin within each group. Explanations say "Recent from source". Personalization starts after the first eligible like and explains each result using its closest liked item.
 
 ### 2.4 Baselines (evaluation only)
 
@@ -252,7 +255,19 @@ One row per user and item; the current state only (latest action wins). Undo del
 
 RLS: owner-only `select`, `insert`, `update (kind, via)`, `delete`; covered by two-user tests. Writes go through `set_feedback(item_id, kind, via)` (`SECURITY INVOKER`, user from `auth.uid()`), because a client-side upsert would also try to update `item_id`.
 
-### 6.4 Later tables
+### 6.4 `embedding_language_means` (shared)
+
+| Column            | Type                   | Notes                                         |
+| ----------------- | ---------------------- | --------------------------------------------- |
+| `embedding_model` | `text`                 | Part of PK; e.g. `text-embedding-3-small@512` |
+| `language`        | `text`                 | Part of PK; `fi` or `en`                      |
+| `mean`            | `vector(512)` not null | Corpus mean for the model and language        |
+| `item_count`      | `integer` not null     | At least 50 embedded items                    |
+| `computed_at`     | `timestamptz` not null | Time the mean was computed                    |
+
+RLS is enabled. Authenticated users have `select` only; anonymous users have no access, and only the service role writes. `pnpm embeddings:means` manually computes the means from all embedded items of the active model, upserts qualifying groups, and reports skipped groups below 50 items. Means remain frozen until the next run. The normal command targets `.env.local`; hosted runs explicitly load `.env.production.local` without changing the local environment file.
+
+### 6.5 Later tables
 
 Click events, interest summaries, discovery candidates, allowlist — defined in their specs.
 

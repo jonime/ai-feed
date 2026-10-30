@@ -345,6 +345,44 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
       for (const item of items.data) {
         itemIds.set(item.title.replace("feed-test-", ""), item.id as string);
       }
+
+      const fixtureIds = new Set(itemIds.values());
+      const batchSize = 500;
+      for (let offset = 0; ; offset += batchSize) {
+        const page = await service
+          .from("content_items")
+          .select("id")
+          .eq("embedding_model", activeModel)
+          .not("embedding", "is", null)
+          .order("id")
+          .range(offset, offset + batchSize - 1);
+        if (page.error) {
+          throw new Error(
+            `Loading non-fixture items failed: ${page.error.message}`,
+          );
+        }
+        const neutralFeedback = page.data
+          .filter((item) => !fixtureIds.has(item.id))
+          .flatMap((item) =>
+            [userAId, userBId].map((userId) => ({
+              user_id: userId,
+              item_id: item.id,
+              kind: "seen",
+              via: "button",
+            })),
+          );
+        if (neutralFeedback.length > 0) {
+          const { error } = await service
+            .from("feedback")
+            .insert(neutralFeedback);
+          if (error) {
+            throw new Error(
+              `Isolating test candidates failed: ${error.message}`,
+            );
+          }
+        }
+        if (page.data.length < batchSize) break;
+      }
     });
 
     beforeEach(async () => {
@@ -353,7 +391,8 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
         const { error } = await service
           .from("feedback")
           .delete()
-          .in("user_id", [userAId, userBId]);
+          .in("user_id", [userAId, userBId])
+          .in("item_id", [...itemIds.values()]);
         if (error)
           throw new Error(`Clearing test feedback failed: ${error.message}`);
       }

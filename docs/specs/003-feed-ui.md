@@ -1,6 +1,6 @@
 # 003 — Personalized feed and interaction UI
 
-**Status:** Approved  
+**Status:** Done
 **Milestone:** Prototype (week 3)  
 **Depends on:** 001 (content, embeddings, gate 1 result), 002 (login, `feedback`, server actions)  
 **Estimate:** 17 h
@@ -153,7 +153,11 @@ Each criterion belongs to one task, so tasks can be completed in order.
 - [x] 6. Action buttons, per-card mutation queue, optimistic updates, undo toast, with unit tests (criterion 6).
 - [x] 7. Swipe gestures with pure gesture logic and unit tests, using the mutation queue (criterion 7).
 - [x] 8. `/liked` page with Unlike (criterion 8).
-- [ ] 9. Run `pnpm embeddings:means` on the cloud project, do the manual video check (criterion 9), and update design.md §2 and §6 with the final defaults and the new table.
+- [x] 9. Run `pnpm embeddings:means` on the cloud project, do the manual video check (criterion 9), and update design.md §2 and §6 with the final defaults and the new table.
+
+Task 9 verification (30 Oct 2026): recomputed hosted means for `text-embedding-3-small@512` (Finnish 239 items, English 522 items). Checked the actual UI in MCP Chrome using a local app instance explicitly configured for hosted Supabase and a disposable empty profile. Loaded pages, clicked Like on five English AI stories, waited for saves, and pressed Refresh feed. The ranking changed to personalized explanations, and the Finnish AI-investment story "Googlen osake syöksyy, Microsoft sinnittelee" ranked 7th. Clicked Not interested on the Mikael Jantunen basketball story, verified immediate collapse and Undo, then refreshed: other sports stories previously at ranks 99, 128, and 174 were all beyond the first 180 results. Authenticated RPC checks independently confirmed explanation ownership and disliked-item exclusion. Deleted the disposable user and verified that its feedback was removed; personal feedback was untouched. Design §2 and §6 document the verified defaults and means table. This was the manual scenario check for the prototype video, not a recorded video artifact.
+
+Validation: `pnpm lint`, `pnpm typecheck`, and `pnpm test` passed (194 unit tests); `pnpm test:integration` passed with 29 tests and 0 skipped. The feed integration fixtures now mark non-fixture catalog items as neutral Seen feedback for disposable test users, so a populated local database does not crowd controlled ranking assertions out of the result limit. No local database reset was needed.
 
 ## Decisions
 
