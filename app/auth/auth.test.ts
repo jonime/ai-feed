@@ -50,14 +50,22 @@ describe("signed-in page", () => {
     expect(auth.getClaims).toHaveBeenCalledExactlyOnceWith();
   });
 
-  it("shows the email, navigation, and sign-out in the shared header", () => {
+  it("shows only the first name, navigation, and sign-out in the shared header", () => {
     const html = renderToStaticMarkup(
-      createElement(AppHeader, { email: "user-a@example.com" }),
+      createElement(AppHeader, { displayName: "Joni Mertoniemi" }),
     );
-    expect(html).toContain("user-a@example.com");
+    expect(html).toContain(">Joni</span>");
+    expect(html).not.toContain("Mertoniemi");
+    expect(html).not.toContain("user-a@example.com");
     expect(html).toContain("Sign out");
     expect(html).toContain("Liked");
     expect(html).toContain('aria-current="page"');
+  });
+
+  it("omits the identity label when no display name is available", () => {
+    const html = renderToStaticMarkup(createElement(AppHeader, {}));
+    expect(html).not.toContain("@example.com");
+    expect(html).toContain("Sign out");
   });
 
   it("loads and renders the first feed page with a refresh control", async () => {

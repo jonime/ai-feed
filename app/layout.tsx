@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   title: "Poimio",
   description:
     "A personalized feed of Finnish and English news, articles, and videos.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

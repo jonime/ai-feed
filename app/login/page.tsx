@@ -1,4 +1,5 @@
-import { CircleAlertIcon, RssIcon } from "lucide-react";
+import { CircleAlertIcon } from "lucide-react";
+import Image from "next/image";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
@@ -23,12 +24,14 @@ export default async function Login({
   return (
     <main className="flex min-h-svh items-center justify-center bg-muted p-6">
       <div className="flex w-full max-w-sm flex-col gap-6">
-        <div className="flex items-center justify-center gap-2 font-medium">
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <RssIcon className="size-4" aria-hidden="true" />
-          </span>
-          Poimio
-        </div>
+        <Image
+          src="/full.png"
+          alt="Poimio"
+          width={2172}
+          height={724}
+          priority
+          className="mx-auto h-auto w-full max-w-56"
+        />
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-xl">
