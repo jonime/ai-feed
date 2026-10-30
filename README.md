@@ -120,3 +120,60 @@ For integrated browsers that cannot complete Google OAuth, use a local Supabase 
 3. Run `pnpm dev` and open `http://localhost:3001/login`. Enter those credentials under **Local sign-in**. No email delivery or Google OAuth is required; the normal Supabase cookie session and RLS still apply.
 
 The form and its server action are enabled only when `NODE_ENV=development` and the configured Supabase URL uses HTTP/HTTPS with an exact loopback hostname (`localhost`, `127.0.0.1`, or `[::1]`). Production builds and development against hosted Supabase keep Google-only sign-in. There is no signup UI or auth bypass, and no new environment variables are required. Resetting the local database removes this account, so recreate it in Studio after a reset.
+
+## Deployment
+
+### Allowlist administration
+
+The service-role-backed CLI manages who can use the hosted feed. It lowercases and validates email addresses, and prints the target host before making a change:
+
+```sh
+pnpm allowlist add person@example.com --note "course reviewer"
+pnpm allowlist list
+pnpm allowlist remove person@example.com
+```
+
+Commands use `.env.local` by default. To target production, pass `.env.production.local` explicitly; remote hosts are rejected without this explicit selection:
+
+```sh
+pnpm allowlist list --env-file=.env.production.local
+pnpm allowlist add person@example.com --note "course reviewer" --env-file=.env.production.local
+pnpm allowlist remove person@example.com --env-file=.env.production.local
+```
+
+Keep `.env.production.local` out of version control. The CLI uses `SUPABASE_SERVICE_ROLE_KEY` only in this server-side script; never use it in browser code or expose it as a `NEXT_PUBLIC_` variable. Removing an email revokes its access on the next request.
+
+### Hosted Supabase Auth
+
+In the hosted Supabase Dashboard, verify the project before changing settings:
+
+- Enable Google as the only sign-in provider; disable Email, including public email/password sign-up.
+- Set the Site URL to the production Vercel URL.
+- Allow the production app callback and `http://localhost:3001/auth/callback` as redirect URLs.
+- Keep Google OAuth consent in Testing mode and synchronize its test-user list with `allowed_users` manually.
+- Confirm the Supabase GitHub integration targets this repository and `main`, and that its migration history includes the latest committed migrations.
+- Verify a direct email sign-up request to the hosted Auth API is rejected.
+
+### Vercel and GitHub Actions
+
+Configure only these public variables in the Vercel production environment:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Do not configure `SUPABASE_SERVICE_ROLE_KEY` or `OPENAI_API_KEY` in Vercel. Disable Vercel Git deployments and preview deployments; production deploys only from the GitHub Actions workflow after both the checks and database integration jobs pass.
+
+Add these repository secrets in GitHub Actions; names only are shown here:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `NEXT_PUBLIC_SUPABASE_URL` (scheduled ingestion)
+- `SUPABASE_SERVICE_ROLE_KEY` (scheduled ingestion)
+- `OPENAI_API_KEY` (scheduled ingestion)
+
+### Migrations and rollback
+
+The Supabase GitHub integration applies migrations on pushes to `main`, independently of the application deployment. Before pushing a migration, run `supabase db reset` and `pnpm test:integration` locally; integration tests must pass with zero skipped. Keep migrations backward-compatible with the deployed application. Never edit an applied migration.
+
+To roll back application behavior, revert the responsible commit and push to `main`; the normal CI gates must pass before Actions deploys the reverted application. Treat database changes as forward-only: correct an applied migration with a new migration rather than trying to reverse or edit migration history. Confirm the application and database remain compatible before deploying either side.

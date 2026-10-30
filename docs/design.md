@@ -187,14 +187,17 @@ Implementation notes:
 
 All user-facing queries run through supabase-js with the user's session, so Row Level Security (RLS) is enforced by the database.
 
-| Data     | Examples                                           | Read                                | Write                                |
-| -------- | -------------------------------------------------- | ----------------------------------- | ------------------------------------ |
-| Shared   | `sources`, content items                           | Any logged-in user                  | Service role only (ingestion, admin) |
-| Per-user | feedback, interest summaries, discovery candidates | Owner only (`user_id = auth.uid()`) | Owner only                           |
+| Data      | Examples                                           | Read                                | Write                                |
+| --------- | -------------------------------------------------- | ----------------------------------- | ------------------------------------ |
+| Allowlist | `allowed_users`                                    | Own lowercased email only           | Service role only                    |
+| Shared    | `sources`, content items, embedding language means | Allowlisted authenticated users     | Service role only (ingestion, admin) |
+| Per-user  | feedback, interest summaries, discovery candidates | Owner only (`user_id = auth.uid()`) | Owner only                           |
 
 Rules:
 
 - RLS is enabled on every table.
+- `allowed_users` is keyed by lowercased email from the verified JWT. Authenticated users can read only their own row; only the service role can write it. `is_allowed()` is the stable, `SECURITY INVOKER` database check used by the shared-table and feedback policies.
+- App pages verify identity with `getClaims()` and check `is_allowed()` for the no-access experience; RLS and database functions remain the authorization boundary.
 - Feed and scoring functions read the user from `auth.uid()` internally and never accept a `user_id` parameter; they run as `SECURITY INVOKER`.
 - Views are created with `security_invoker = true`.
 - The service-role key is used only in GitHub Actions secrets and server-only environment variables, never in `NEXT_PUBLIC_` variables.
@@ -203,7 +206,7 @@ Rules:
 
 ## 6. Data model
 
-Tables are added by the spec that first needs them. Shared tables are readable by any logged-in user and writable only with the service role (§5.1).
+Tables are added by the spec that first needs them. Shared content tables are readable only by allowlisted authenticated users and writable only with the service role (§5.1). `allowed_users` is the exception: each authenticated user can read only their own row.
 
 ### 6.1 `sources` (shared)
 
@@ -267,9 +270,19 @@ RLS: owner-only `select`, `insert`, `update (kind, via)`, `delete`; covered by t
 
 RLS is enabled. Authenticated users have `select` only; anonymous users have no access, and only the service role writes. `pnpm embeddings:means` manually computes the means from all embedded items of the active model, upserts qualifying groups, and reports skipped groups below 50 items. Means remain frozen until the next run. The normal command targets `.env.local`; hosted runs explicitly load `.env.production.local` without changing the local environment file.
 
-### 6.5 Later tables
+### 6.5 `allowed_users` (shared access control)
 
-Click events, interest summaries, discovery candidates, allowlist — defined in their specs.
+| Column     | Type                   | Notes                                     |
+| ---------- | ---------------------- | ----------------------------------------- |
+| `email`    | `text` PK              | Lowercase; check constraint enforces this |
+| `note`     | `text` null            | Optional administrator note               |
+| `added_at` | `timestamptz` not null | Defaults to `now()`                       |
+
+RLS is enabled. Authenticated users can select only the row whose email matches `lower((select auth.jwt()) ->> 'email')`; `anon` and `authenticated` have no write grants. The service role manages rows. `public.is_allowed()` is `stable`, runs as `SECURITY INVOKER` with an empty search path, and is executable only by `authenticated`; it checks the caller's verified JWT email against this table. Every authenticated read/write policy on shared content and feedback also requires this check.
+
+### 6.6 Later tables
+
+Click events, interest summaries, and discovery candidates are defined in their specs.
 
 ## 7. User interaction
 
