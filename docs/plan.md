@@ -72,21 +72,21 @@ Goal: prove the core AI idea. The prototype is a rough first version that the fi
 - Early ranking experiment and cross-lingual check ([design.md §4.1](design.md#41-early-checks-week-2-spec-001)).
 - Next.js link list with _Like_ / _Not interested_ / _Seen_ buttons, swipe gestures on touch devices, and undo ([design.md §7](design.md#7-user-interaction)).
 - Recommender ranking ([design.md §2.1](design.md#21-interest-scoring-nearest-liked-item)) with recency and "why recommended" explanations.
-- Runs on localhost against the cloud Supabase project.
+- Deployed on Vercel; production deploys only after CI, including the RLS integration tests, passes; access limited by an allowlist enforced in the database ([spec 004](specs/004-deployment-access.md)).
 
-Not included: deployment, exploration slots, interest summary, evaluation harness, source discovery.
+Not included: exploration slots, interest summary, evaluation harness, source discovery.
 
-**Video (2–3 min):**
+**Video (2–3 min), recorded on the deployed app:**
 
 1. Empty profile → varied feed.
 2. Like 4–5 Linux/AI articles → feed re-ranks with explanations.
 3. Finnish articles on the same topic appear (cross-lingual embeddings).
-4. Mark sports as not interesting → sports articles drop.
-5. Gate 1 result: nearest-liked vs average-vector vs newest-first (precision@10 from the early experiment).
+4. Mark sports as not interesting → sports articles drop; a swipe on a phone.
+5. Gate 1 result: nearest-liked vs average-vector vs newest-first, raw and language-centered (precision@10 from the early experiment).
 
 ### 4.2 Final application (due 13 Dec)
 
-- Deployed on Vercel; access limited by an allowlist and per-user LLM usage limits.
+- Per-user LLM usage limits, added with the first LLM-triggering user action.
 - Exploration slots and diversity re-ranking.
 - Evaluation harness and results ([design.md §4](design.md#4-evaluation)).
 - Optional (see cut order in §9): LLM interest summary; click tracking as a weak positive signal.
@@ -119,7 +119,7 @@ About 19 hours per week over 7 weeks. Most code is written by AI agents, so impl
 | 1    | 26 Oct – 1 Nov | Project setup (Next.js, Supabase CLI, pgvector), Google OAuth configuration, start ingestion (fetch, parse, fixtures), LLM model choice, plan polish                                                                     | Research, scaffolding, parser drafts                  | 16    |
 | 2    | 2 – 8 Nov      | Finish ingestion and embeddings, **hourly ingestion with GitHub Actions**, cross-lingual check, **early ranking experiment (gate 1)**, Google login, feedback table with RLS and two-user tests; **submit plan (8 Nov)** | SQL and test drafts, workflow file, experiment script | 21    |
 | 3    | 9 – 15 Nov     | Link list and feedback UI, recommender SQL function, recency, explanations, demo data — **prototype ready**                                                                                                              | SQL review, component generation                      | 19    |
-| 4    | 16 – 22 Nov    | **Record and submit prototype video (22 Nov)**; Vercel deployment (only after RLS tests pass), allowlist and usage limits                                                                                                | Deployment configuration                              | 13    |
+| 4    | 16 – 22 Nov    | **Record and submit prototype video (22 Nov)**; deployment and allowlist were finished early, so the remaining time starts the evaluation harness                                                                        | Deployment configuration                              | 13    |
 
 ### Phase 2 — Final application
 
