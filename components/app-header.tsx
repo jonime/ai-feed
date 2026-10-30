@@ -9,7 +9,7 @@ export function AppHeader({ displayName }: { displayName?: string | null }) {
   const firstName = displayName?.trim().split(/\s+/)[0];
 
   return (
-    <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-4 px-4">
         <Link href="/" className="flex items-center gap-2 font-medium">
           <Image
