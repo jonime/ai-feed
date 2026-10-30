@@ -122,7 +122,7 @@ Each criterion belongs to one task.
 
 - [x] 1. Migration: `allowed_users`, `is_allowed()`, recreated policies with the allowlist check, explicit checks in `get_feed` and `set_feedback` (criterion 1).
 - [x] 2. Integration tests for allowlist enforcement; update existing tests to allowlist their users (criterion 2).
-- [ ] 3. `pnpm allowlist` admin script with unit tests (criterion 3).
+- [x] 3. `pnpm allowlist` admin script with unit tests (criterion 3).
 - [ ] 4. `/no-access` page and redirect (criterion 4).
 - [ ] 5. `ci.yml` with checks and integration jobs (criterion 5).
 - [ ] 6. Hosted Supabase Auth configuration, verify migrations applied by the GitHub integration, Vercel project and secrets (criterion 6).
