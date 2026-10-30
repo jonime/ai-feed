@@ -29,7 +29,7 @@ Make the application available on the internet (Vercel + hosted Supabase) for in
 
 ## Out of scope
 
-- Per-user LLM usage limits: moved to spec 006, together with the first LLM-triggering user action (interest summary).
+- Per-user LLM usage limits: moved to spec 007, together with the first LLM-triggering user action (interest summary).
 - Preview deployments (disabled).
 - Content Security Policy (possible later hardening).
 - Custom domain (the default `*.vercel.app` domain is used).
@@ -135,7 +135,7 @@ Each criterion belongs to one task.
 - The allowlist is keyed by lowercased email from the verified JWT.
 - Vercel stores no secret keys; the deployed app uses only the public Supabase URL and anon key.
 - Production deploys only from GitHub Actions after CI; Vercel Git deployments and previews are disabled.
-- Per-user LLM limits move to spec 006, where the first LLM-triggering user action is built.
+- Per-user LLM limits move to spec 007, where the first LLM-triggering user action is built.
 - Migrations are applied by the Supabase GitHub integration, not by the deploy job; migrations stay backward compatible with the deployed app.
 - The default `*.vercel.app` domain is used.
 

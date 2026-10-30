@@ -28,9 +28,9 @@ Show each signed-in user a ranked feed of links, personalized by their feedback 
 
 ## Out of scope
 
-- Exploration slots and diversity re-ranking (spec 006).
-- Click tracking (spec 006, optional).
-- Evaluation-specific parameters such as an "as of" time (spec 005).
+- Exploration slots and diversity re-ranking (spec 007).
+- Click tracking (spec 007, optional).
+- Evaluation-specific parameters such as an "as of" time (spec 006).
 - Deployment, allowlist, usage limits (spec 004).
 
 ## Design notes

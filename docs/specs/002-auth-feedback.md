@@ -32,7 +32,7 @@ Let users sign in with Google and store their per-item feedback (_Like_, _Not in
 - Feed UI, buttons, gestures, undo toast (spec 003).
 - Allowlist and per-user usage limits (spec 004).
 - Vercel deployment and production redirect URLs (spec 004).
-- Click events (spec 006).
+- Click events (spec 007).
 
 ## Design notes
 

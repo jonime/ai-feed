@@ -78,7 +78,7 @@ Why this approach:
 - The prototype's final score is interest plus $\beta \cdot 0.5^{\text{age}/h}$, with $\beta = 0.1$. The half-life $h$ is 24 hours for articles and 7 days for videos. Candidate windows are 7 days for articles and 30 days for videos; all rated items are excluded.
 - `get_feed` runs as `SECURITY INVOKER`, reads identity from `auth.uid()`, and is executable by authenticated users only. Pages contain 30 items; later pages exclude already shown IDs instead of using offsets. The limit is clamped to 1-100 and exclusions to 1,000 IDs.
 - These defaults are kept together in the SQL function and will be tuned in week 6. Cards already displayed do not reorder; refreshing reloads the ranking, and subsequent pages use the latest feedback.
-- Diversity re-ranking (MMR) and exploration slots are deferred to spec 006, not part of the prototype. The planned slot distribution is:
+- Diversity re-ranking (MMR) and exploration slots are deferred to spec 007, not part of the prototype. The planned slot distribution is:
   - ~70% best-matching items
   - ~20% related but unfamiliar items (moderate similarity band)
   - ~10% exploratory items (topics/sources the user rarely engages with)

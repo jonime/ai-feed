@@ -57,7 +57,7 @@ Technical details are in [design.md](design.md).
 
 - **Semantic embeddings** (multilingual, Finnish + English) represent every article and video.
 - **Recommender:** each item is scored by its similarity to the closest item the user liked, minus a penalty for similarity to items marked _Not interested_, combined with recency, diversity, and exploration slots. Every recommendation can be explained.
-- **LLM tasks:** readable interest summary, relevance labels for evaluation, and (stretch goal) source discovery with web search. The LLM does not rank items.
+- **LLM tasks:** fill missing item descriptions from extracted article text, readable interest summary, relevance labels for evaluation, and (stretch goal) source discovery with web search. The LLM does not rank items.
 - **Evaluation:** replay test with simulated personas against average-vector, newest-first, and random baselines.
 
 ## 4. Deliverables
@@ -143,40 +143,41 @@ About 19 hours per week over 7 weeks. Most code is written by AI agents, so impl
 
 Specs are written just in time: spec N+1 is drafted when spec N reaches its last few tasks, so it reflects what was learned. Workflow and rules are in [AGENTS.md](../AGENTS.md); the template is [specs/\_template.md](specs/_template.md).
 
-| Spec                                  | Content                                                                                                     | Week | Draft when                      |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- |
-| [001](specs/001-ingestion.md)         | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
-| [002](specs/002-auth-feedback.md)     | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
-| [003](specs/003-feed-ui.md)           | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
-| [004](specs/004-deployment-access.md) | Vercel deployment from CI, allowlist enforced in the database                                               | 4    | 003 nearly done                 |
-| 005                                   | Evaluation harness                                                                                          | 5    | During week 4                   |
-| 006                                   | Exploration slots and diversity; per-user LLM limits; optional interest summary and click tracking          | 6    | During week 5                   |
-| 007                                   | Source discovery: (a) catalog-based, (b) LLM web search                                                     | 6–7  | When gate 2 passes              |
+| Spec                                       | Content                                                                                                     | Week | Draft when                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- |
+| [001](specs/001-ingestion.md)              | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
+| [002](specs/002-auth-feedback.md)          | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
+| [003](specs/003-feed-ui.md)                | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
+| [004](specs/004-deployment-access.md)      | Vercel deployment from CI, allowlist enforced in the database                                               | 4    | 003 nearly done                 |
+| [005](specs/005-description-enrichment.md) | Enrich missing descriptions from page metadata and article text; backfill existing items                    | 2–3  | Drafted                         |
+| 006                                        | Evaluation harness                                                                                          | 5    | During week 4                   |
+| 007                                        | Exploration slots and diversity; per-user LLM limits; optional interest summary and click tracking          | 6    | During week 5                   |
+| 008                                        | Source discovery: (a) catalog-based, (b) LLM web search                                                     | 6–7  | When gate 2 passes              |
 
 Spec 002 runs alongside the end of 001 because login is independent of ingestion.
 
 ## 8. Risks
 
-| Risk                                                 | Mitigation                                                                                                                                                       |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scope grows too large                                | Fixed prototype scope; decision gates and cut order (§9); 12 h buffer                                                                                            |
-| Prototype not ready for the video window             | Prototype ready by 15 Nov; week 4 is slack for re-recording                                                                                                      |
-| Final phase is only three weeks                      | Ingestion runs from week 2 so evaluation data is ready; gate 2 is criteria-based and can pass early; documentation written continuously; cut order (§9)          |
-| Recommendations do not clearly beat baselines        | Early ranking experiment in week 2 (gate 1); a rigorous comparison counts as success either way                                                                  |
-| Evaluation results inflated                          | Time-based splits, identical feedback histories, near-duplicate exclusion, frozen parameters, repeated runs ([design.md §4.3](design.md#43-protocol-safeguards)) |
-| Little real feedback data (few users)                | Persona-based replay evaluation                                                                                                                                  |
-| LLM labels are biased proxies                        | Manual agreement check reported overall and for Finnish vs English; different model family possible                                                              |
-| Poor Finnish embedding quality                       | Multilingual model required; tested in week 2                                                                                                                    |
-| Small or noisy content pool                          | Add Finnish topic-specific and non-tech feeds; balance by source                                                                                                 |
-| Sparse text for some items (Hacker News titles only) | Accept for now; optionally fetch the linked page's meta description later                                                                                        |
-| RSS feeds unreliable                                 | Multiple sources, robust error handling                                                                                                                          |
-| API costs or provider changes                        | Limited LLM use, cached results, model name stored with embeddings                                                                                               |
-| Source discovery too complex                         | Two independent stages, both after gate 2; first cuts                                                                                                            |
-| LLM suggests invented or unsafe URLs                 | Every candidate fetched and validated; SSRF safeguards                                                                                                           |
-| Free-tier limits (Vercel, Supabase)                  | Jobs on GitHub Actions; 512-dim embeddings; prune old articles                                                                                                   |
-| Supabase free project pauses when idle               | Scheduled jobs keep it active; check before demos                                                                                                                |
-| RLS mistakes leak another user's data                | Functions use `auth.uid()`, no `user_id` parameters; two-user tests written with each per-user table from week 2                                                 |
-| Other users run up LLM costs                         | Allowlist, per-user limits, OAuth in Testing mode                                                                                                                |
+| Risk                                          | Mitigation                                                                                                                                                       |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope grows too large                         | Fixed prototype scope; decision gates and cut order (§9); 12 h buffer                                                                                            |
+| Prototype not ready for the video window      | Prototype ready by 15 Nov; week 4 is slack for re-recording                                                                                                      |
+| Final phase is only three weeks               | Ingestion runs from week 2 so evaluation data is ready; gate 2 is criteria-based and can pass early; documentation written continuously; cut order (§9)          |
+| Recommendations do not clearly beat baselines | Early ranking experiment in week 2 (gate 1); a rigorous comparison counts as success either way                                                                  |
+| Evaluation results inflated                   | Time-based splits, identical feedback histories, near-duplicate exclusion, frozen parameters, repeated runs ([design.md §4.3](design.md#43-protocol-safeguards)) |
+| Little real feedback data (few users)         | Persona-based replay evaluation                                                                                                                                  |
+| LLM labels are biased proxies                 | Manual agreement check reported overall and for Finnish vs English; different model family possible                                                              |
+| Poor Finnish embedding quality                | Multilingual model required; tested in week 2                                                                                                                    |
+| Small or noisy content pool                   | Add Finnish topic-specific and non-tech feeds; balance by source                                                                                                 |
+| Some feed items have no usable description    | Spec 005 tries feed text, page metadata, then an AI summary of extracted article text; unresolved items stay hidden from users                                   |
+| RSS feeds unreliable                          | Multiple sources, robust error handling                                                                                                                          |
+| API costs or provider changes                 | Limited LLM use, cached results, model name stored with embeddings                                                                                               |
+| Source discovery too complex                  | Two independent stages, both after gate 2; first cuts                                                                                                            |
+| LLM suggests invented or unsafe URLs          | Every candidate fetched and validated; SSRF safeguards                                                                                                           |
+| Free-tier limits (Vercel, Supabase)           | Jobs on GitHub Actions; 512-dim embeddings; prune old articles                                                                                                   |
+| Supabase free project pauses when idle        | Scheduled jobs keep it active; check before demos                                                                                                                |
+| RLS mistakes leak another user's data         | Functions use `auth.uid()`, no `user_id` parameters; two-user tests written with each per-user table from week 2                                                 |
+| Other users run up LLM costs                  | Allowlist, per-user limits, OAuth in Testing mode                                                                                                                |
 
 ## 9. Decision gates and cut order
 
@@ -212,7 +213,7 @@ The minimum acceptable result is: ingestion, personal feed with feedback, the re
 - Finnish and English supported from the start.
 - Recommender: nearest-liked-item scoring with negative penalty, recency, diversity, and exploration slots.
 - Average-vector, newest-first, and random as evaluation baselines.
-- OpenAI for embeddings and LLM; LLM used for interest summary, evaluation labels, and (stretch) web-search source discovery — not for ranking.
+- OpenAI for embeddings and LLM; LLM used for missing-description summaries, interest summary, evaluation labels, and (stretch) web-search source discovery — not for ranking.
 - Stack: Next.js on Vercel, Supabase Postgres + pgvector, supabase-js with SQL migrations (no ORM), Supabase Auth, GitHub Actions for scheduled jobs (hourly ingestion from week 2).
 - Source discovery is a two-stage stretch goal (catalog-based, then LLM web search), attempted only after gate 2; admin-approved sources join a shared pool.
 - Cut order: web-search discovery, catalog discovery, LLM interest summary, click tracking.
@@ -223,8 +224,8 @@ None of these block spec 001; each is decided in the spec that first needs it.
 
 | Decision                                                                                  | Decided in                                                          |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Exact OpenAI model for LLM tasks (price, Finnish quality)                                 | Spec 005 (evaluation labels)                                        |
+| Exact OpenAI model for LLM tasks (price, Finnish quality)                                 | Spec 005 (description summaries) and spec 006 (evaluation labels)   |
 | Parameter values (click weight, $\lambda$, recency decay, slot mix)                       | Defaults in spec 003; tuned and frozen through evaluation in week 6 |
 | How long older but relevant items stay in the feed (possibly longer for videos than news) | Spec 003 (recency defaults)                                         |
 | More YouTube channels or Finnish technology media in the active set                       | After about a week of ingestion data shows volume per topic         |
-| Per-user LLM limits (e.g. interest summaries per day, discovery runs per week)            | Spec 006 (first LLM-triggering user action)                         |
+| Per-user LLM limits (e.g. interest summaries per day, discovery runs per week)            | Spec 007 (first LLM-triggering user action)                         |
