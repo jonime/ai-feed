@@ -1,6 +1,6 @@
 # 004 — Deployment and access control
 
-**Status:** Approved  
+**Status:** Done
 **Milestone:** Prototype (week 4, after the video)  
 **Depends on:** 001–003  
 **Estimate:** 10 h
