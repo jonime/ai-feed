@@ -13,7 +13,7 @@ export function AppHeader({ email }: { email: ReactNode }) {
           <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <RssIcon className="size-4" aria-hidden="true" />
           </span>
-          <span className="hidden sm:inline">AI Nosto</span>
+          <span className="hidden sm:inline">Poimio</span>
         </Link>
         <AppNav />
         <div className="ml-auto flex min-w-0 items-center gap-2">

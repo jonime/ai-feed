@@ -54,7 +54,7 @@ describe.skipIf(!enabled || serviceKey == null)(
     }
 
     /** Unique per run, so the tests never collide with real content. */
-    const prefix = `https://ai-nosto-integration.example/${Date.now()}`;
+    const prefix = `https://poimio-integration.example/${Date.now()}`;
     let sourceA: Source;
     let sourceB: Source;
 

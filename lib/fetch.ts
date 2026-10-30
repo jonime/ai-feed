@@ -19,7 +19,7 @@ export const DEFAULT_TIMEOUT_MS = 15_000;
 export const DEFAULT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 export const DEFAULT_CONCURRENCY = 4;
 export const DEFAULT_USER_AGENT =
-  "ai-nosto/0.1 (Finnish & English news ingestion bot)";
+  "poimio/0.1 (Finnish & English news ingestion bot)";
 
 /** A feed to fetch, plus the conditional-GET state we stored on a previous run. */
 export interface FeedToFetch {

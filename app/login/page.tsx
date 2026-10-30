@@ -27,7 +27,7 @@ export default async function Login({
           <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <RssIcon className="size-4" aria-hidden="true" />
           </span>
-          AI Nosto
+          Poimio
         </div>
         <Card>
           <CardHeader className="text-center">

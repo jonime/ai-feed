@@ -1,4 +1,4 @@
-# AI Nosto — Project Plan
+# Poimio — Project Plan
 
 ## What is the goal of your project? Give at least 1-2 concrete examples what it can achieve.
 

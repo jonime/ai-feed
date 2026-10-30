@@ -1,4 +1,4 @@
-# AI Nosto — Personal Content Discovery
+# Poimio — Personal Content Discovery
 
 **Version:** 1.1 — Project plan  
 **Status:** Planning complete — ready for submission  

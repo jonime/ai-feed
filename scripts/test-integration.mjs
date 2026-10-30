@@ -57,7 +57,7 @@ if (existsSync(".env.local")) {
   }
 }
 
-const reportDirectory = mkdtempSync(join(tmpdir(), "ai-nosto-integration-"));
+const reportDirectory = mkdtempSync(join(tmpdir(), "poimio-integration-"));
 const reportPath = join(reportDirectory, "vitest.json");
 
 try {
