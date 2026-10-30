@@ -11,7 +11,7 @@ const { auth, createClient, from, select, eq, order } = vi.hoisted(() => ({
   order: vi.fn(),
 }));
 
-vi.mock("../../lib/supabase/server", () => ({ createClient }));
+vi.mock("@/lib/supabase/server", () => ({ createClient }));
 vi.mock("next/navigation", () => ({
   redirect: (destination: string): never => {
     throw new Error(`REDIRECT:${destination}`);
@@ -68,7 +68,6 @@ describe("liked page", () => {
     expect(html).toContain("A liked article");
     expect(html).toContain("Example News");
     expect(html).toContain("Unlike");
-    expect(html).toContain("Feed");
   });
 
   it.each([

@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { CircleAlertIcon } from "lucide-react";
-import { AppHeader } from "@/components/app-header";
 import { Alert, AlertTitle } from "@/components/ui/alert";
-import { createClient } from "../../lib/supabase/server";
-import type { LikedFeedItem } from "../../lib/feed-ui";
+import { createClient } from "@/lib/supabase/server";
+import type { LikedFeedItem } from "@/lib/feed-ui";
 import LikedList from "./liked-list";
 
 export const instant = false;
@@ -57,33 +56,23 @@ export default async function LikedPage() {
     return [likedItem];
   });
 
-  const email =
-    typeof claimsData.claims.email === "string"
-      ? claimsData.claims.email
-      : "Signed in";
   const renderedAt = new Date().toISOString();
 
   return (
-    <>
-      <AppHeader email={email} current="/liked" />
-      <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6">
-        <h1
-          id="liked-heading"
-          className="text-2xl font-semibold tracking-tight"
-        >
-          Liked items
-        </h1>
-        {error ? (
-          <Alert variant="destructive">
-            <CircleAlertIcon aria-hidden="true" />
-            <AlertTitle>
-              Liked items could not be loaded. Please try again.
-            </AlertTitle>
-          </Alert>
-        ) : (
-          <LikedList initialItems={likedItems} renderedAt={renderedAt} />
-        )}
-      </main>
-    </>
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6">
+      <h1 id="liked-heading" className="text-2xl font-semibold tracking-tight">
+        Liked items
+      </h1>
+      {error ? (
+        <Alert variant="destructive">
+          <CircleAlertIcon aria-hidden="true" />
+          <AlertTitle>
+            Liked items could not be loaded. Please try again.
+          </AlertTitle>
+        </Alert>
+      ) : (
+        <LikedList initialItems={likedItems} renderedAt={renderedAt} />
+      )}
+    </main>
   );
 }

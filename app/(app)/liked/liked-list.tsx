@@ -23,12 +23,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
-import { clearFeedback } from "../feedback/actions";
+import { clearFeedback } from "@/app/feedback/actions";
 import {
   formatRelativeTime,
   safeHttpUrl,
   type LikedFeedItem,
-} from "../../lib/feed-ui";
+} from "@/lib/feed-ui";
 
 export default function LikedList({
   initialItems,

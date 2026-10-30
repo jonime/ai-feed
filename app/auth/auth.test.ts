@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import Home from "../page";
+import Home from "../(app)/page";
 import Login from "../login/page";
+import { AppHeader } from "@/components/app-header";
 import { PasswordSignInForm } from "../login/password-sign-in-form";
 import { signInWithPassword, signOut } from "./actions";
 import { GET } from "./callback/route";
@@ -23,6 +24,8 @@ vi.mock("next/navigation", () => ({
   redirect: (destination: string): never => {
     throw new Error(`REDIRECT:${destination}`);
   },
+  usePathname: () => "/",
+  useRouter: () => ({ refresh: vi.fn() }),
 }));
 
 const verifiedClaims = {
@@ -42,13 +45,19 @@ beforeEach(() => {
 });
 
 describe("signed-in page", () => {
-  it("independently verifies identity before displaying email and sign-out", async () => {
-    const html = renderToStaticMarkup(
-      await Home({ searchParams: Promise.resolve({}) }),
-    );
+  it("independently verifies identity before rendering the feed", async () => {
+    await Home({ searchParams: Promise.resolve({}) });
     expect(auth.getClaims).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it("shows the email, navigation, and sign-out in the shared header", () => {
+    const html = renderToStaticMarkup(
+      createElement(AppHeader, { email: "user-a@example.com" }),
+    );
     expect(html).toContain("user-a@example.com");
     expect(html).toContain("Sign out");
+    expect(html).toContain("Liked");
+    expect(html).toContain('aria-current="page"');
   });
 
   it("loads and renders the first feed page with a refresh control", async () => {

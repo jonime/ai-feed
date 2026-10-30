@@ -12,7 +12,6 @@ import {
   CheckIcon,
   CircleAlertIcon,
   InboxIcon,
-  RefreshCwIcon,
   SparklesIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -40,6 +39,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { clearFeedback, setFeedback } from "../feedback/actions";
 import { loadMoreFeed } from "./actions";
+import { RefreshFeedButton } from "./refresh-feed-button";
 import {
   FeedbackMutationQueue,
   type FeedbackKind,
@@ -61,17 +61,6 @@ import {
 
 const pageSize = 30;
 const maximumItems = 1000;
-
-function RefreshFeedButton() {
-  return (
-    <form action="/" method="get">
-      <Button variant="outline" type="submit">
-        <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
-        Refresh feed
-      </Button>
-    </form>
-  );
-}
 
 function FeedCard({
   item,
