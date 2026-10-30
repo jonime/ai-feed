@@ -16,6 +16,43 @@ const options = {
   },
 };
 
+function parseFirstJsonObject(output: string): unknown {
+  const start = output.indexOf("{");
+  if (start === -1) throw new Error("Supabase CLI returned no JSON object.");
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < output.length; index += 1) {
+    const character = output[index]!;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+
+    if (character === '"') inString = true;
+    else if (character === "{") depth += 1;
+    else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) return JSON.parse(output.slice(start, index + 1));
+    }
+  }
+
+  throw new Error("Supabase CLI returned an incomplete JSON object.");
+}
+
+describe("parseFirstJsonObject", () => {
+  it("extracts the first complete object from CLI output", () => {
+    expect(
+      parseFirstJsonObject(
+        'Connecting to local database...\n{"rows":[{"value":"brace } inside"}]}\n{"other":true}',
+      ),
+    ).toEqual({ rows: [{ value: "brace } inside" }] });
+  });
+});
+
 describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
   "feedback schema and row-level security against local Supabase",
   () => {
@@ -158,13 +195,17 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
         ["db", "query", "--local", "--output-format", "json", query],
         { encoding: "utf8" },
       );
-      const jsonStart = output.indexOf("{");
-      const jsonEnd = output.lastIndexOf("}");
-      if (jsonStart === -1 || jsonEnd < jsonStart) {
-        throw new Error("Supabase CLI did not return a JSON query result.");
+      const result = parseFirstJsonObject(output);
+      if (
+        typeof result !== "object" ||
+        result === null ||
+        !("rows" in result) ||
+        !Array.isArray(result.rows) ||
+        result.rows.length === 0
+      ) {
+        throw new Error("Supabase CLI JSON query result did not contain rows.");
       }
-      const row = JSON.parse(output.slice(jsonStart, jsonEnd + 1))
-        .rows[0] as Record<string, boolean>;
+      const row = result.rows[0] as Record<string, boolean>;
       expect(row).toEqual({
         rls_enabled: true,
         four_owner_policies: true,
