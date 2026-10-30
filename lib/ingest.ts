@@ -42,6 +42,16 @@ function fetchInput(source: Source) {
   };
 }
 
+function isYouTubeShort(url: string): boolean {
+  const parsed = URL.parse(url);
+  if (!parsed) return false;
+  return (
+    (parsed.hostname === "youtube.com" ||
+      parsed.hostname.endsWith(".youtube.com")) &&
+    parsed.pathname.startsWith("/shorts/")
+  );
+}
+
 /** Fetch, parse, persist, and embed the currently active feed catalog. */
 export async function runIngestion(
   db: IngestDb,
@@ -114,7 +124,10 @@ export async function runIngestion(
       continue;
     }
 
-    summary.newItems = await db.insertItems(source, parsed.items);
+    summary.newItems = await db.insertItems(
+      source,
+      parsed.items.filter((item) => !isYouTubeShort(item.url)),
+    );
     await recordSourceOutcome(
       db,
       source.id,

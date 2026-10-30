@@ -54,6 +54,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - `type` is `video` for YouTube sources, otherwise `article`.
 - `published_at`: `pubDate` / `published` / `updated`; falls back to fetch time.
 - Deduplication: insert on normalized `url`; on conflict do nothing (first source wins).
+- Before insertion, exclude YouTube items whose URL host is `youtube.com` or a subdomain and whose path starts with `/shorts/`. They are not stored or embedded; ordinary watch URLs and other hosts remain eligible.
 
 **Embedding**
 
@@ -107,6 +108,7 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 12. The GitHub Actions workflow runs hourly and on manual trigger, uses repository secrets only, never overlaps with itself, and a manual run ingests successfully against the cloud project.
 13. The gate 1 re-run reports precision@10 per persona for nearest-liked and average-vector on raw and centered vectors (plus newest-first), reusing earlier judgments; the result and the final gate 1 decision (method and whether to center) are recorded in `docs/ai-log.md`.
 14. `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
+15. Ingestion excludes explicit YouTube `/shorts/` URLs before insertion, retains ordinary videos, and does not exclude matching paths on unrelated hosts. Covered by the saved YouTube feed fixture and host-boundary tests.
 
 ## Tasks
 
@@ -123,10 +125,11 @@ Fetch the active feeds, normalize and deduplicate their items, embed them, and s
 - [ ] 11. Cross-lingual check script for raw and centered vectors; record the result in `docs/ai-log.md`.
 - [x] 12. Early ranking experiment scripts (export for blind judging, score judged CSV); record the result and gate 1 decision.
 - [x] 13. Gate 1 re-run with language centering: add centered variants to the ranking script, export only unjudged items for blind judging, score, and record the final gate 1 decision (criterion 13).
+- [x] 14. Exclude YouTube Shorts during ingestion (criterion 15).
 
 ## Decisions
 
-- YouTube Shorts are kept. They can be identified from the URL (`/shorts/`) if filtering is needed later, so no extra column.
+- YouTube Shorts with explicit `/shorts/` URLs are excluded during ingestion; no extra column or duration heuristic. This does not classify Shorts presented as ordinary watch URLs.
 - A local multilingual embedding model is compared only if the cross-lingual check fails for both raw and centered vectors (criterion 10).
 - Gate 1 is decided on the re-run with centered vectors (task 13), not on the first run alone.
 
