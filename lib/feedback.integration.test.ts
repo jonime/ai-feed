@@ -16,38 +16,64 @@ const options = {
   },
 };
 
-function parseFirstJsonObject(output: string): unknown {
-  const start = output.indexOf("{");
-  if (start === -1) throw new Error("Supabase CLI returned no JSON object.");
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let index = start; index < output.length; index += 1) {
-    const character = output[index]!;
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (character === "\\") escaped = true;
-      else if (character === '"') inString = false;
-      continue;
+function parseSupabaseQueryResult(output: string): { rows: unknown[] } {
+  let searchFrom = 0;
+  while (true) {
+    const start = output.indexOf("{", searchFrom);
+    if (start === -1) {
+      throw new Error("Supabase CLI returned no JSON query result with rows.");
     }
 
-    if (character === '"') inString = true;
-    else if (character === "{") depth += 1;
-    else if (character === "}") {
-      depth -= 1;
-      if (depth === 0) return JSON.parse(output.slice(start, index + 1));
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    let end = -1;
+    for (let index = start; index < output.length; index += 1) {
+      const character = output[index]!;
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (character === "\\") escaped = true;
+        else if (character === '"') inString = false;
+        continue;
+      }
+
+      if (character === '"') inString = true;
+      else if (character === "{") depth += 1;
+      else if (character === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          end = index;
+          break;
+        }
+      }
+    }
+
+    if (end === -1) {
+      throw new Error("Supabase CLI returned an incomplete JSON object.");
+    }
+
+    try {
+      const candidate: unknown = JSON.parse(output.slice(start, end + 1));
+      if (
+        typeof candidate === "object" &&
+        candidate !== null &&
+        "rows" in candidate
+      ) {
+        const rows = candidate.rows;
+        if (Array.isArray(rows)) return { rows };
+      }
+      searchFrom = end + 1;
+    } catch {
+      searchFrom = start + 1;
     }
   }
-
-  throw new Error("Supabase CLI returned an incomplete JSON object.");
 }
 
-describe("parseFirstJsonObject", () => {
-  it("extracts the first complete object from CLI output", () => {
+describe("parseSupabaseQueryResult", () => {
+  it("finds query rows after other JSON output and trailing text", () => {
     expect(
-      parseFirstJsonObject(
-        'Connecting to local database...\n{"rows":[{"value":"brace } inside"}]}\n{"other":true}',
+      parseSupabaseQueryResult(
+        'Connecting to local database...\n{"boundary":"id"}\n{"rows":[{"value":"brace } inside"}]}\n{"other":true}',
       ),
     ).toEqual({ rows: [{ value: "brace } inside" }] });
   });
@@ -195,14 +221,8 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
         ["db", "query", "--local", "--output-format", "json", query],
         { encoding: "utf8" },
       );
-      const result = parseFirstJsonObject(output);
-      if (
-        typeof result !== "object" ||
-        result === null ||
-        !("rows" in result) ||
-        !Array.isArray(result.rows) ||
-        result.rows.length === 0
-      ) {
+      const result = parseSupabaseQueryResult(output);
+      if (result.rows.length === 0) {
         throw new Error("Supabase CLI JSON query result did not contain rows.");
       }
       const row = result.rows[0] as Record<string, boolean>;
