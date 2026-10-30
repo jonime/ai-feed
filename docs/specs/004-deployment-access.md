@@ -1,0 +1,144 @@
+# 004 — Deployment and access control
+
+**Status:** Approved  
+**Milestone:** Prototype (week 4, after the video)  
+**Depends on:** 001–003  
+**Estimate:** 10 h
+
+## Goal
+
+Make the application available on the internet (Vercel + hosted Supabase) for invited users only, with automated tests — including the security integration tests — gating every production deployment.
+
+## Context
+
+- Stack and free-tier notes: [design.md §5](../design.md#5-technology-stack)
+- Security rules: [design.md §5.1](../design.md#51-data-access-and-security) and [AGENTS.md](../../AGENTS.md)
+- Existing auth: `proxy.ts`, `app/login/`, `lib/supabase/`, `lib/supabase/local-password-login.ts`
+- Existing workflows: `.github/workflows/ingest.yml`, `codeql.yml`
+- Plan gate: deployment only after RLS tests pass ([plan.md §4.1](../plan.md#41-prototype-proof-of-concept-due-22-nov))
+
+## In scope
+
+- Allowlist table, `is_allowed()` check, and updated RLS policies so non-invited users can read or write nothing.
+- Admin script to add, remove, and list allowed emails.
+- _No access_ page for signed-in users who are not on the allowlist.
+- CI workflow: lint, typecheck, unit tests, build, and database integration tests on local Supabase in GitHub Actions.
+- Production deployment to Vercel from GitHub Actions, only after CI passes on `main`.
+- Hosted Supabase Auth configuration (Google only, redirect URLs) and a documented checklist.
+- Basic security response headers.
+
+## Out of scope
+
+- Per-user LLM usage limits: moved to spec 006, together with the first LLM-triggering user action (interest summary).
+- Preview deployments (disabled).
+- Content Security Policy (possible later hardening).
+- Custom domain (the default `*.vercel.app` domain is used).
+- Account deletion UI.
+
+## Design notes
+
+**Allowlist**
+
+- Shared table `public.allowed_users (email text primary key, note text, added_at timestamptz not null default now())`. Emails are stored lowercased; a check constraint enforces `email = lower(email)`.
+- RLS: an authenticated user can `select` only their own row (`email = lower((select auth.jwt()) ->> 'email')`); no write grants for `anon` or `authenticated`. Writes only with the service role.
+- `public.is_allowed()` — `stable`, `SECURITY INVOKER`, `set search_path = ''`: returns whether the caller's own row exists. Execute granted to `authenticated` only.
+- **Enforcement is in the database.** A new migration drops and recreates the existing policies so that every `authenticated` policy also requires `(select public.is_allowed())`:
+  - `sources`, `content_items`, `embedding_language_means`: `select`.
+  - `feedback`: `select`, `insert`, `update`, `delete`.
+- `get_feed` and `set_feedback` raise a clear error when the caller is not allowed (in addition to RLS returning no rows).
+- Removing an email revokes access on the next request; existing sessions cannot read or write anything.
+- The `(select ...)` wrapper lets Postgres evaluate the check once per query instead of once per row.
+
+**Admin script**
+
+- `pnpm allowlist add <email> [--note text]`, `pnpm allowlist remove <email>`, `pnpm allowlist list`, using the service role.
+- Validates and lowercases emails; prints the target Supabase host (never keys) before writing.
+- Uses `.env.local` by default; production requires `--env-file=.env.production.local` (see AGENTS.md).
+
+**No access page**
+
+- After verifying the user with `getClaims()`, app pages call `is_allowed()`. A signed-in user who is not allowed is redirected to `/no-access`, which explains that access is invite-only and offers sign-out.
+- This is user experience only; authorization stays in the database and server actions.
+
+**Hosted Supabase Auth**
+
+- Google is the only enabled provider; the email provider (and therefore email/password sign-up through the public API) is **disabled** on the hosted project.
+- Site URL: the production Vercel URL. Redirect URLs: the production callback and `http://localhost:3001/auth/callback`.
+- The local password login stays limited to development against a localhost Supabase URL (`isLocalPasswordLoginEnabled`).
+- Google OAuth consent screen stays in Testing mode; the Google test-user list and the allowlist are kept in sync manually.
+
+**CI and deployment**
+
+- `.github/workflows/ci.yml` on push and pull request:
+  - **checks** job: `pnpm install --frozen-lockfile`, `lint`, `typecheck`, `test`, `build`.
+  - **integration** job: Supabase CLI, `supabase start`, `supabase db reset`, `pnpm test:integration` (fails if any test is skipped).
+  - **deploy** job (only on `main`, needs both): `vercel pull --environment=production`, `vercel build --prod`, `vercel deploy --prebuilt --prod`, using `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repository secrets.
+- Vercel's own Git deployments are disabled (`vercel.json`: `git.deploymentEnabled: false`), so nothing reaches production without passing CI.
+- Workflow permissions are `contents: read`; third-party actions use pinned major versions as in the existing workflows.
+
+**Migrations**
+
+- Migrations reach the hosted project through the **Supabase GitHub integration** on pushes to `main`, independently of CI. They can therefore be applied before (or without) the app deploy.
+- Consequences: run `supabase db reset` and `pnpm test:integration` locally before pushing a migration, and keep migrations backward compatible with the currently deployed app (add first, remove in a later migration).
+
+**Vercel environment**
+
+- Only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are configured on Vercel. The deployed app never uses the service-role key or the OpenAI key, so neither is stored on Vercel.
+
+**Security headers** (in `next.config.ts`)
+
+- `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, `Permissions-Policy` disabling camera, microphone, and geolocation. Vercel adds HSTS.
+
+## Acceptance criteria
+
+Each criterion belongs to one task.
+
+1. **Task 1 — allowlist migration**
+   1. `supabase db reset` applies the migration cleanly; `allowed_users` has RLS, the lowercase check, and no write grants for `anon` or `authenticated`; `is_allowed()` is executable by `authenticated` only.
+   2. All existing shared-table and `feedback` policies include the allowlist check.
+2. **Task 2 — allowlist integration tests**
+   1. Existing integration tests add their test users to the allowlist and still pass.
+   2. An authenticated user who is not allowed gets no rows from `sources`, `content_items`, `embedding_language_means`, and `feedback`, cannot insert feedback, and gets an error from `get_feed` and `set_feedback`.
+   3. Removing a user from the allowlist revokes access immediately; a user can read only their own `allowed_users` row; anonymous clients get nothing.
+   4. `pnpm test:integration` passes with 0 skipped.
+3. **Task 3 — admin script**
+   1. `pnpm allowlist add|remove|list` works against local Supabase, lowercases and validates emails, rejects invalid ones, and prints the target host without keys. Unit tests cover argument parsing and validation.
+4. **Task 4 — no access page**
+   1. A signed-in user who is not allowed is redirected to `/no-access` and can sign out; an allowed user never sees it. Unit tests cover the redirect decision.
+5. **Task 5 — CI workflow**
+   1. On a push, the checks and integration jobs run and pass; the integration job fails if any integration test is skipped.
+6. **Task 6 — hosted Supabase and Vercel setup**
+   1. Hosted Auth has Google enabled, the email provider disabled, and the Site URL and redirect URLs set; a direct email sign-up request to the hosted project's Auth API is rejected.
+   2. The Supabase GitHub integration has applied all migrations up to this spec to the hosted project (checked in the dashboard's migration history).
+   3. Vercel has only the two public environment variables, and its Git deployments are disabled.
+7. **Task 7 — production deployment**
+   1. A push to `main` deploys to production only after the checks and integration jobs pass; a failing check blocks the deploy.
+   2. On the production URL, an allowlisted Google account signs in and sees the personalized feed; feedback works; production responses include the security headers; the local password login form is not shown.
+8. **Task 8 — documentation**
+   1. README has a deployment section: allowlist commands, hosted Auth checklist, Vercel and GitHub secrets (names only), migration flow through the Supabase GitHub integration, and how to roll back. design.md §5.1 and §6 describe the allowlist.
+9. **Every task:** `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass; tasks touching the database also pass `pnpm test:integration` with 0 skipped.
+
+## Tasks
+
+- [ ] 1. Migration: `allowed_users`, `is_allowed()`, recreated policies with the allowlist check, explicit checks in `get_feed` and `set_feedback` (criterion 1).
+- [ ] 2. Integration tests for allowlist enforcement; update existing tests to allowlist their users (criterion 2).
+- [ ] 3. `pnpm allowlist` admin script with unit tests (criterion 3).
+- [ ] 4. `/no-access` page and redirect (criterion 4).
+- [ ] 5. `ci.yml` with checks and integration jobs (criterion 5).
+- [ ] 6. Hosted Supabase Auth configuration, verify migrations applied by the GitHub integration, Vercel project and secrets (criterion 6).
+- [ ] 7. Deploy job, `vercel.json`, security headers; verify production end to end (criterion 7).
+- [ ] 8. README deployment section; update design.md §5.1 and §6 (criterion 8).
+
+## Decisions
+
+- Access is enforced in the database (RLS + `is_allowed()`), not only in the app; the _No access_ page is user experience.
+- The allowlist is keyed by lowercased email from the verified JWT.
+- Vercel stores no secret keys; the deployed app uses only the public Supabase URL and anon key.
+- Production deploys only from GitHub Actions after CI; Vercel Git deployments and previews are disabled.
+- Per-user LLM limits move to spec 006, where the first LLM-triggering user action is built.
+- Migrations are applied by the Supabase GitHub integration, not by the deploy job; migrations stay backward compatible with the deployed app.
+- The default `*.vercel.app` domain is used.
+
+## Open questions
+
+- None.

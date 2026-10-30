@@ -143,15 +143,15 @@ About 19 hours per week over 7 weeks. Most code is written by AI agents, so impl
 
 Specs are written just in time: spec N+1 is drafted when spec N reaches its last few tasks, so it reflects what was learned. Workflow and rules are in [AGENTS.md](../AGENTS.md); the template is [specs/\_template.md](specs/_template.md).
 
-| Spec                              | Content                                                                                                     | Week | Draft when                      |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- |
-| [001](specs/001-ingestion.md)     | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
-| [002](specs/002-auth-feedback.md) | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
-| [003](specs/003-feed-ui.md)       | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
-| 004                               | Vercel deployment, allowlist and usage limits                                                               | 4    | 003 nearly done                 |
-| 005                               | Evaluation harness                                                                                          | 5    | During week 4                   |
-| 006                               | Exploration slots and diversity; optional interest summary and click tracking                               | 6    | During week 5                   |
-| 007                               | Source discovery: (a) catalog-based, (b) LLM web search                                                     | 6–7  | When gate 2 passes              |
+| Spec                                  | Content                                                                                                     | Week | Draft when                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---- | ------------------------------- |
+| [001](specs/001-ingestion.md)         | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
+| [002](specs/002-auth-feedback.md)     | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
+| [003](specs/003-feed-ui.md)           | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
+| [004](specs/004-deployment-access.md) | Vercel deployment from CI, allowlist enforced in the database                                               | 4    | 003 nearly done                 |
+| 005                                   | Evaluation harness                                                                                          | 5    | During week 4                   |
+| 006                                   | Exploration slots and diversity; per-user LLM limits; optional interest summary and click tracking          | 6    | During week 5                   |
+| 007                                   | Source discovery: (a) catalog-based, (b) LLM web search                                                     | 6–7  | When gate 2 passes              |
 
 Spec 002 runs alongside the end of 001 because login is independent of ingestion.
 
@@ -227,4 +227,4 @@ None of these block spec 001; each is decided in the spec that first needs it.
 | Parameter values (click weight, $\lambda$, recency decay, slot mix)                       | Defaults in spec 003; tuned and frozen through evaluation in week 6 |
 | How long older but relevant items stay in the feed (possibly longer for videos than news) | Spec 003 (recency defaults)                                         |
 | More YouTube channels or Finnish technology media in the active set                       | After about a week of ingestion data shows volume per topic         |
-| Per-user LLM limits (e.g. interest summaries per day, discovery runs per week)            | Spec 004                                                            |
+| Per-user LLM limits (e.g. interest summaries per day, discovery runs per week)            | Spec 006 (first LLM-triggering user action)                         |
