@@ -9,8 +9,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Poimio",
-  description:
-    "A personalized feed of Finnish and English news, articles, and videos.",
+  description: "The web, picked for you.",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
