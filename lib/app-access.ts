@@ -1,8 +1,4 @@
-export function getAppAccessRedirect(
-  isVerifiedUser: boolean,
-  isAllowed: boolean,
-): "/login" | "/no-access" | null {
+export function getAppAccessRedirect(isVerifiedUser: boolean): "/login" | null {
   if (!isVerifiedUser) return "/login";
-  if (!isAllowed) return "/no-access";
   return null;
 }

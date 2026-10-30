@@ -172,14 +172,6 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
         throw new Error(`Creating user B failed: ${userB.error.message}`);
       userBId = userB.data.user.id;
 
-      const { error: allowlistError } = await service
-        .from("allowed_users")
-        .insert([{ email: emailA }, { email: emailB }]);
-      if (allowlistError)
-        throw new Error(
-          `Allowlisting feedback test users failed: ${allowlistError.message}`,
-        );
-
       const [signInA, signInB] = await Promise.all([
         userAClient.auth.signInWithPassword({ email: emailA, password }),
         userBClient.auth.signInWithPassword({ email: emailB, password }),
@@ -225,10 +217,6 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
 
     afterAll(async () => {
       const { service } = ready();
-      await service
-        .from("allowed_users")
-        .delete()
-        .in("email", [emailA, emailB]);
       for (const userId of [userAId, userBId]) {
         if (userId) await service.auth.admin.deleteUser(userId);
       }

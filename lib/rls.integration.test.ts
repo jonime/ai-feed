@@ -44,22 +44,16 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
     const authenticatedClientB: SupabaseClient | null = anonKey
       ? createClient(url, anonKey, options)
       : null;
-    const unallowedClient: SupabaseClient | null = anonKey
-      ? createClient(url, anonKey, options)
-      : null;
-
     function ready(): {
       anonymous: SupabaseClient;
       authenticated: SupabaseClient;
       authenticatedB: SupabaseClient;
-      unallowed: SupabaseClient;
       service: SupabaseClient;
     } {
       if (
         anonymousClient == null ||
         authenticatedClient == null ||
         authenticatedClientB == null ||
-        unallowedClient == null ||
         serviceClient == null
       ) {
         throw new Error("integration environment not ready");
@@ -68,7 +62,6 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
         anonymous: anonymousClient,
         authenticated: authenticatedClient,
         authenticatedB: authenticatedClientB,
-        unallowed: unallowedClient,
         service: serviceClient,
       };
     }
@@ -76,7 +69,6 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
     const testId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const email = `rls-${testId}@example.test`;
     const emailB = `rls-b-${testId}@example.test`;
-    const unallowedEmail = `rls-unallowed-${testId}@example.test`;
     const password = `Rls-test-${testId}-Aa1!`;
     const feedUrl = `https://rls-integration.example/${testId}/feed`;
     const itemUrl = `https://rls-integration.example/${testId}/item`;
@@ -85,10 +77,9 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
     let itemId: string;
     let userId: string;
     let userBId: string;
-    let unallowedUserId: string;
 
     beforeAll(async () => {
-      const { service, authenticated, authenticatedB, unallowed } = ready();
+      const { service, authenticated, authenticatedB } = ready();
       const { data: userData, error: userError } =
         await service.auth.admin.createUser({
           email,
@@ -112,31 +103,9 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
       }
       userBId = userB.data.user.id;
 
-      const unallowedUser = await service.auth.admin.createUser({
-        email: unallowedEmail,
-        password,
-        email_confirm: true,
-      });
-      if (unallowedUser.error) {
-        throw new Error(
-          `creating unallowed RLS test user failed: ${unallowedUser.error.message}`,
-        );
-      }
-      unallowedUserId = unallowedUser.data.user.id;
-
-      const { error: allowlistError } = await service
-        .from("allowed_users")
-        .insert([{ email }, { email: emailB }]);
-      if (allowlistError) {
-        throw new Error(
-          `allowlisting RLS test users failed: ${allowlistError.message}`,
-        );
-      }
-
-      const [signIn, signInB, signInUnallowed] = await Promise.all([
+      const [signIn, signInB] = await Promise.all([
         authenticated.auth.signInWithPassword({ email, password }),
         authenticatedB.auth.signInWithPassword({ email: emailB, password }),
-        unallowed.auth.signInWithPassword({ email: unallowedEmail, password }),
       ]);
       if (signIn.error) {
         throw new Error(
@@ -148,12 +117,6 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
           `signing in RLS test user B failed: ${signInB.error.message}`,
         );
       }
-      if (signInUnallowed.error) {
-        throw new Error(
-          `signing in unallowed RLS test user failed: ${signInUnallowed.error.message}`,
-        );
-      }
-
       const { data: source, error: sourceError } = await service
         .from("sources")
         .insert({
@@ -202,26 +165,10 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
           `creating RLS test language mean failed: ${meansError.message}`,
         );
       }
-
-      const { error: feedbackError } = await service.from("feedback").insert({
-        user_id: unallowedUserId,
-        item_id: itemId,
-        kind: "like",
-        via: "button",
-      });
-      if (feedbackError) {
-        throw new Error(
-          `creating unallowed feedback fixture failed: ${feedbackError.message}`,
-        );
-      }
     });
 
     afterAll(async () => {
       const { service } = ready();
-      await service
-        .from("allowed_users")
-        .delete()
-        .in("email", [email, emailB, unallowedEmail]);
       await service
         .from("embedding_language_means")
         .delete()
@@ -229,7 +176,7 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
       await service.from("feedback").delete().eq("item_id", itemId);
       await service.from("content_items").delete().eq("id", itemId);
       await service.from("sources").delete().eq("id", sourceId);
-      for (const id of [userId, userBId, unallowedUserId]) {
+      for (const id of [userId, userBId]) {
         if (id != null) await service.auth.admin.deleteUser(id);
       }
     });
@@ -253,101 +200,19 @@ describe.skipIf(!enabled || anonKey == null || serviceKey == null)(
       expect(item?.id).toBe(itemId);
     });
 
-    it("limits allowlist reads to each user's own email and denies anonymous access", async () => {
-      const { anonymous, authenticated, authenticatedB } = ready();
-      const [userAResult, userBResult, anonymousResult] = await Promise.all([
-        authenticated.from("allowed_users").select("email"),
-        authenticatedB.from("allowed_users").select("email"),
-        anonymous.from("allowed_users").select("email"),
-      ]);
+    it("admits signed-in users without email provisioning and supports the previous app", async () => {
+      const { authenticated, authenticatedB, anonymous } = ready();
+      for (const client of [authenticated, authenticatedB]) {
+        const access = await client.rpc("is_allowed");
+        expect(access.error).toBeNull();
+        expect(access.data).toBe(true);
 
-      expect(userAResult.error).toBeNull();
-      expect(userAResult.data).toEqual([{ email }]);
-      expect(userBResult.error).toBeNull();
-      expect(userBResult.data).toEqual([{ email: emailB }]);
-      expect(anonymousResult.error?.code).toBe("42501");
-      expect(anonymousResult.data ?? []).toEqual([]);
-    });
-
-    it("denies an authenticated user who is not on the allowlist", async () => {
-      const { unallowed } = ready();
-      const [sources, items, means, feedback, ownAllowlistRow] =
-        await Promise.all([
-          unallowed.from("sources").select("id").eq("id", sourceId),
-          unallowed.from("content_items").select("id").eq("id", itemId),
-          unallowed
-            .from("embedding_language_means")
-            .select("embedding_model")
-            .eq("embedding_model", meansModel),
-          unallowed
-            .from("feedback")
-            .select("item_id")
-            .eq("user_id", unallowedUserId)
-            .eq("item_id", itemId),
-          unallowed.from("allowed_users").select("email"),
-        ]);
-
-      for (const result of [sources, items, means, feedback, ownAllowlistRow]) {
-        expect(result.error).toBeNull();
-        expect(result.data).toEqual([]);
+        const feed = await client.rpc("get_feed", { p_limit: 1 });
+        expect(feed.error).toBeNull();
+        expect(Array.isArray(feed.data)).toBe(true);
       }
-
-      const { error: insertError } = await unallowed.from("feedback").insert({
-        item_id: itemId,
-        kind: "like",
-        via: "button",
-      });
-      expect(insertError?.code).toBe("42501");
-
-      const { error: feedError } = await unallowed.rpc("get_feed", {
-        p_limit: 1,
-      });
-      expect(feedError?.code).toBe("42501");
-      expect(feedError?.message).toContain("User is not allowed");
-
-      const { error: feedbackRpcError } = await unallowed.rpc("set_feedback", {
-        p_item_id: itemId,
-        p_kind: "like",
-        p_via: "button",
-      });
-      expect(feedbackRpcError?.code).toBe("42501");
-      expect(feedbackRpcError?.message).toContain("User is not allowed");
-    });
-
-    it("revokes access immediately when an allowlist row is removed", async () => {
-      const { authenticated, service } = ready();
-      const { data: beforeRemoval, error: beforeError } = await authenticated
-        .from("sources")
-        .select("id")
-        .eq("id", sourceId);
-      expect(beforeError).toBeNull();
-      expect(beforeRemoval).toEqual([{ id: sourceId }]);
-
-      const { error: removeError } = await service
-        .from("allowed_users")
-        .delete()
-        .eq("email", email);
-      expect(removeError).toBeNull();
-
-      try {
-        const [sources, feed] = await Promise.all([
-          authenticated.from("sources").select("id").eq("id", sourceId),
-          authenticated.rpc("get_feed", { p_limit: 1 }),
-        ]);
-        expect(sources.error).toBeNull();
-        expect(sources.data).toEqual([]);
-        expect(feed.error?.code).toBe("42501");
-        expect(feed.error?.message).toContain("User is not allowed");
-      } finally {
-        const { error: restoreError } = await service
-          .from("allowed_users")
-          .insert({ email });
-        if (restoreError) {
-          throw new Error(
-            `restoring RLS test allowlist row failed: ${restoreError.message}`,
-          );
-        }
-      }
+      const access = await anonymous.rpc("is_allowed");
+      expect(access.error?.code).toBe("42501");
     });
 
     it("denies anonymous reads from both shared tables", async () => {

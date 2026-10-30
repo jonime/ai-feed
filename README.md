@@ -123,25 +123,11 @@ The form and its server action are enabled only when `NODE_ENV=development` and 
 
 ## Deployment
 
-### Allowlist administration
+### Application access
 
-The service-role-backed CLI manages who can use the hosted feed. It lowercases and validates email addresses, and prints the target host before making a change:
+Any user who signs in with Google can use the feed; no invitation or email provisioning is required. Authentication remains mandatory. Shared content is read-only for authenticated users, and feedback remains private to its owner through database RLS. Browsing and feedback do not trigger OpenAI calls; ingestion AI work is shared across users. Per-user usage limits must ship with the first user-triggered AI feature.
 
-```sh
-pnpm allowlist add person@example.com --note "course reviewer"
-pnpm allowlist list
-pnpm allowlist remove person@example.com
-```
-
-Commands use `.env.local` by default. To target production, pass `.env.production.local` explicitly; remote hosts are rejected without this explicit selection:
-
-```sh
-pnpm allowlist list --env-file=.env.production.local
-pnpm allowlist add person@example.com --note "course reviewer" --env-file=.env.production.local
-pnpm allowlist remove person@example.com --env-file=.env.production.local
-```
-
-Keep `.env.production.local` out of version control. The CLI uses `SUPABASE_SERVICE_ROLE_KEY` only in this server-side script; never use it in browser code or expose it as a `NEXT_PUBLIC_` variable. Removing an email revokes its access on the next request.
+The removal migration drops `allowed_users` and removes its policy and RPC checks. It temporarily retains `is_allowed()` as an authenticated identity check so the previously deployed app continues working when migrations arrive before the new app. The new app does not call it. Remove this compatibility function only in a later migration after the new app is deployed.
 
 ### Hosted Supabase Auth
 
@@ -150,7 +136,7 @@ In the hosted Supabase Dashboard, verify the project before changing settings:
 - Enable Google as the only sign-in provider; disable Email, including public email/password sign-up.
 - Set the Site URL to the production Vercel URL.
 - Allow the production app callback and `http://localhost:3001/auth/callback` as redirect URLs.
-- Keep Google OAuth consent in Testing mode and synchronize its test-user list with `allowed_users` manually.
+- For open Google sign-in, publish the Google OAuth app with an External audience to Production in Google Auth Platform. Testing mode still limits sign-in to Google's configured test users, even though the application no longer has an allowlist. Complete any Google verification requirements shown for the configured scopes.
 - Confirm the Supabase GitHub integration targets this repository and `main`, and that its migration history includes the latest committed migrations.
 - Verify a direct email sign-up request to the hosted Auth API is rejected.
 

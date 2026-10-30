@@ -72,7 +72,7 @@ Goal: prove the core AI idea. The prototype is a rough first version that the fi
 - Early ranking experiment and cross-lingual check ([design.md §4.1](design.md#41-early-checks-week-2-spec-001)).
 - Next.js link list with _Like_ / _Not interested_ / _Seen_ buttons, swipe gestures on touch devices, and undo ([design.md §7](design.md#7-user-interaction)).
 - Recommender ranking ([design.md §2.1](design.md#21-interest-scoring-nearest-liked-item)) with recency and "why recommended" explanations.
-- Deployed on Vercel; production deploys only after CI, including the RLS integration tests, passes; access limited by an allowlist enforced in the database ([spec 004](specs/004-deployment-access.md)).
+- Deployed on Vercel; production deploys only after CI, including the RLS integration tests, passes; any verified Google user can sign in without an invitation ([spec 004](specs/004-deployment-access.md)).
 
 Not included: exploration slots, interest summary, evaluation harness, source discovery.
 
@@ -97,7 +97,7 @@ Not included: exploration slots, interest summary, evaluation harness, source di
 
 Outside the course scope:
 
-- Open public sign-up (access is limited to an allowlist)
+- Sign-in providers other than Google and public email/password sign-up
 - Per-user source subscriptions (all approved sources are shared)
 - Video transcripts, podcasts, and research papers (videos are supported through YouTube channel feeds, metadata only)
 - Autonomous web crawling
@@ -119,7 +119,7 @@ About 19 hours per week over 7 weeks. Most code is written by AI agents, so impl
 | 1    | 26 Oct – 1 Nov | Project setup (Next.js, Supabase CLI, pgvector), Google OAuth configuration, start ingestion (fetch, parse, fixtures), LLM model choice, plan polish                                                                     | Research, scaffolding, parser drafts                  | 16    |
 | 2    | 2 – 8 Nov      | Finish ingestion and embeddings, **hourly ingestion with GitHub Actions**, cross-lingual check, **early ranking experiment (gate 1)**, Google login, feedback table with RLS and two-user tests; **submit plan (8 Nov)** | SQL and test drafts, workflow file, experiment script | 21    |
 | 3    | 9 – 15 Nov     | Link list and feedback UI, recommender SQL function, recency, explanations, demo data — **prototype ready**                                                                                                              | SQL review, component generation                      | 19    |
-| 4    | 16 – 22 Nov    | **Record and submit prototype video (22 Nov)**; deployment and allowlist were finished early, so the remaining time starts the evaluation harness                                                                        | Deployment configuration                              | 13    |
+| 4    | 16 – 22 Nov    | **Record and submit prototype video (22 Nov)**; deployment was finished early, so the remaining time starts the evaluation harness                                                                                       | Deployment configuration                              | 13    |
 
 ### Phase 2 — Final application
 
@@ -148,7 +148,7 @@ Specs are written just in time: spec N+1 is drafted when spec N reaches its last
 | [001](specs/001-ingestion.md)              | Project setup, ingestion, hourly GitHub Actions run, cross-lingual check, early ranking experiment (gate 1) | 1–2  | Drafted                         |
 | [002](specs/002-auth-feedback.md)          | Google login, feedback table, two-user RLS tests                                                            | 2    | 001 reaches its embedding tasks |
 | [003](specs/003-feed-ui.md)                | Feed UI (buttons, swipe gestures, Seen, undo), recommender SQL function, recency, explanations              | 3    | After gate 1                    |
-| [004](specs/004-deployment-access.md)      | Vercel deployment from CI, allowlist enforced in the database                                               | 4    | 003 nearly done                 |
+| [004](specs/004-deployment-access.md)      | Vercel deployment from CI, authenticated access with database RLS                                           | 4    | 003 nearly done                 |
 | [005](specs/005-description-enrichment.md) | Enrich missing descriptions from page metadata and article text; backfill existing items                    | 2–3  | Drafted                         |
 | 006                                        | Evaluation harness                                                                                          | 5    | During week 4                   |
 | 007                                        | Exploration slots and diversity; per-user LLM limits; optional interest summary and click tracking          | 6    | During week 5                   |
@@ -207,7 +207,7 @@ The minimum acceptable result is: ingestion, personal feed with feedback, the re
 - Solo course project, 7 weeks (26 Oct – 13 Dec 2026), 135 hours; may continue as a standalone application.
 - Three submissions: plan (8 Nov, 25%), prototype with video (22 Nov, 25%), final version (13 Dec, 50%).
 - Link aggregator; clicking opens the original website.
-- Multiple users with personal feeds; Google login via Supabase Auth; access limited by an allowlist.
+- Multiple users with personal feeds; Google login via Supabase Auth; any verified Google user can sign in.
 - Row Level Security on all tables; shared content is read-only for users, per-user data is owner-only.
 - RSS/Atom feeds (including YouTube channel feeds) are the content source; articles and videos, metadata only.
 - Finnish and English supported from the start.

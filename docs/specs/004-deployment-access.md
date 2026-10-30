@@ -5,6 +5,11 @@
 **Depends on:** 001–003  
 **Estimate:** 10 h
 
+**Access update (30 Oct 2026):** The user approved removing invite-only access.
+The original implementation below is historical; the amendment at the end of
+this spec supersedes its allowlist requirements. Authentication and owner-only
+RLS remain mandatory.
+
 ## Goal
 
 Make the application available on the internet (Vercel + hosted Supabase) for invited users only, with automated tests — including the security integration tests — gating every production deployment.
@@ -147,3 +152,34 @@ Each criterion belongs to one task.
 ## Open questions
 
 - None.
+
+## Amendment: remove invite-only access (30 Oct 2026)
+
+The user approved removing the application allowlist. The original implementation
+above is historical; the following requirements supersede its invite-only rules.
+Google authentication remains required, shared tables remain read-only for
+authenticated users, and feedback remains owner-only under RLS. No request-time
+AI calls are introduced.
+
+### Acceptance criteria
+
+- A new migration removes email-based checks from shared-table and feedback
+  policies and from `get_feed` and `set_feedback`, without changing ranking.
+- Remove `allowed_users`. Keep `is_allowed()` temporarily as an authenticated
+  identity check so the previously deployed app works when migrations land first.
+- All verified users can enter the app without an access-check RPC. Remove the
+  no-access page and allowlist CLI, command, and tests.
+- Integration users require no provisioning beyond authentication. Tests prove
+  shared reads and feed/feedback RPCs work, anonymous access remains denied, and
+  two-user feedback isolation is preserved.
+- Documentation explains open Google sign-in and the external OAuth publishing
+  step. No production settings or data are changed as part of local verification.
+- `pnpm lint`, `pnpm typecheck`, `pnpm test`, and local
+  `pnpm test:integration` pass with 0 skipped integration tests.
+
+### Tasks
+
+- [x] 10. Remove database allowlist enforcement in a rollout-compatible migration
+      and update security integration tests.
+- [x] 11. Remove application allowlist checks, no-access UI, and CLI; update docs
+      and run the required validation gates.

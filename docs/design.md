@@ -187,26 +187,25 @@ Implementation notes:
 
 All user-facing queries run through supabase-js with the user's session, so Row Level Security (RLS) is enforced by the database.
 
-| Data      | Examples                                           | Read                                | Write                                |
-| --------- | -------------------------------------------------- | ----------------------------------- | ------------------------------------ |
-| Allowlist | `allowed_users`                                    | Own lowercased email only           | Service role only                    |
-| Shared    | `sources`, content items, embedding language means | Allowlisted authenticated users     | Service role only (ingestion, admin) |
-| Per-user  | feedback, interest summaries, discovery candidates | Owner only (`user_id = auth.uid()`) | Owner only                           |
+| Data     | Examples                                           | Read                                | Write                                |
+| -------- | -------------------------------------------------- | ----------------------------------- | ------------------------------------ |
+| Shared   | `sources`, content items, embedding language means | Authenticated users                 | Service role only (ingestion, admin) |
+| Per-user | feedback, interest summaries, discovery candidates | Owner only (`user_id = auth.uid()`) | Owner only                           |
 
 Rules:
 
 - RLS is enabled on every table.
-- `allowed_users` is keyed by lowercased email from the verified JWT. Authenticated users can read only their own row; only the service role can write it. `is_allowed()` is the stable, `SECURITY INVOKER` database check used by the shared-table and feedback policies.
-- App pages verify identity with `getClaims()` and check `is_allowed()` for the no-access experience; RLS and database functions remain the authorization boundary.
+- Any verified Google user can use the app; no invitation or email provisioning is required.
+- App pages verify identity with `getClaims()`; RLS and database functions remain the authorization boundary. Google OAuth must be published to Production for sign-in beyond Google's configured test users.
 - Feed and scoring functions read the user from `auth.uid()` internally and never accept a `user_id` parameter; they run as `SECURITY INVOKER`.
 - Views are created with `security_invoker = true`.
 - The service-role key is used only in GitHub Actions secrets and server-only environment variables, never in `NEXT_PUBLIC_` variables.
-- RLS does not limit cost: LLM-triggering actions are restricted by an allowlist and per-user limits.
+- RLS does not limit cost. Current AI usage is shared ingestion work, independent of user count; per-user limits must be implemented with the first user-triggered LLM action.
 - Policies are covered by automated tests with two users.
 
 ## 6. Data model
 
-Tables are added by the spec that first needs them. Shared content tables are readable only by allowlisted authenticated users and writable only with the service role (§5.1). `allowed_users` is the exception: each authenticated user can read only their own row.
+Tables are added by the spec that first needs them. Shared content tables are readable only by authenticated users and writable only with the service role (§5.1).
 
 ### 6.1 `sources` (shared)
 
@@ -270,15 +269,9 @@ RLS: owner-only `select`, `insert`, `update (kind, via)`, `delete`; covered by t
 
 RLS is enabled. Authenticated users have `select` only; anonymous users have no access, and only the service role writes. `pnpm embeddings:means` manually computes the means from all embedded items of the active model, upserts qualifying groups, and reports skipped groups below 50 items. Means remain frozen until the next run. The normal command targets `.env.local`; hosted runs explicitly load `.env.production.local` without changing the local environment file.
 
-### 6.5 `allowed_users` (shared access control)
+### 6.5 Access-control removal
 
-| Column     | Type                   | Notes                                     |
-| ---------- | ---------------------- | ----------------------------------------- |
-| `email`    | `text` PK              | Lowercase; check constraint enforces this |
-| `note`     | `text` null            | Optional administrator note               |
-| `added_at` | `timestamptz` not null | Defaults to `now()`                       |
-
-RLS is enabled. Authenticated users can select only the row whose email matches `lower((select auth.jwt()) ->> 'email')`; `anon` and `authenticated` have no write grants. The service role manages rows. `public.is_allowed()` is `stable`, runs as `SECURITY INVOKER` with an empty search path, and is executable only by `authenticated`; it checks the caller's verified JWT email against this table. Every authenticated read/write policy on shared content and feedback also requires this check.
+The email allowlist table was removed by a forward migration. `public.is_allowed()` remains temporarily for rollout compatibility with the previous app: it is `stable`, `SECURITY INVOKER`, has an empty search path, is executable only by `authenticated`, and returns whether `auth.uid()` is non-null. No current policy, feed/feedback RPC, or app page calls it. Drop this compatibility function in a later migration after the updated app is deployed.
 
 ### 6.6 Later tables
 

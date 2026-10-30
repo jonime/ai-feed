@@ -31,7 +31,7 @@ Show each signed-in user a ranked feed of links, personalized by their feedback 
 - Exploration slots and diversity re-ranking (spec 007).
 - Click tracking (spec 007, optional).
 - Evaluation-specific parameters such as an "as of" time (spec 006).
-- Deployment, allowlist, usage limits (spec 004).
+- Deployment (spec 004); per-user AI usage limits (spec 007).
 
 ## Design notes
 
