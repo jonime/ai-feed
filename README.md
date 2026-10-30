@@ -75,7 +75,7 @@ SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=your-web-client-id.apps.googleuserconten
 SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET=your-client-secret
 ```
 
-Do not copy production Supabase credentials into this file or `.env.local`. Keep the app's local Supabase URL and keys in `.env.local`; the URL is `http://127.0.0.1:55321`. The variable names are also listed in [.env.example](.env.example). Email/password authentication stays enabled for local automated tests; Google is the only planned UI sign-in method.
+Do not copy production Supabase credentials into this file or `.env.local`. Keep the app's local Supabase URL and keys in `.env.local`; the URL is `http://127.0.0.1:55321`. The variable names are also listed in [.env.example](.env.example). Email/password authentication stays enabled for local automated tests and the local-development sign-in form described below.
 
 With Docker running, apply the auth configuration by starting (or restarting) the local stack:
 
@@ -110,3 +110,13 @@ Local CLI configuration does not configure the hosted project. Perform these ste
 To verify the setup, visit `/` without a session and check that it redirects to `/login`. A listed Google test user should be able to sign in, return to `/`, see their email, and sign out back to `/login`. A Google `redirect_uri_mismatch` error means its registered Supabase callback does not exactly match; a missing PKCE verifier usually means the app hostname changed or its cookie was lost.
 
 References: [Supabase Google Auth](https://supabase.com/docs/guides/auth/social-login/auth-google), [local config and secrets](https://supabase.com/docs/guides/local-development/managing-config), [redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls).
+
+## Local email/password sign-in
+
+For integrated browsers that cannot complete Google OAuth, use a local Supabase account instead:
+
+1. Start local Supabase and confirm `.env.local` uses `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321` with the matching local anon key. Do not use hosted credentials.
+2. Open local Supabase Studio at `http://127.0.0.1:55323`. Under **Authentication > Users**, choose **Add user > Create new user**, enter a development-only email and password, and enable **Auto Confirm User**. Do not reuse a real account's password.
+3. Run `pnpm dev` and open `http://localhost:3001/login`. Enter those credentials under **Local sign-in**. No email delivery or Google OAuth is required; the normal Supabase cookie session and RLS still apply.
+
+The form and its server action are enabled only when `NODE_ENV=development` and the configured Supabase URL uses HTTP/HTTPS with an exact loopback hostname (`localhost`, `127.0.0.1`, or `[::1]`). Production builds and development against hosted Supabase keep Google-only sign-in. There is no signup UI or auth bypass, and no new environment variables are required. Resetting the local database removes this account, so recreate it in Studio after a reset.

@@ -19,7 +19,7 @@ Let users sign in with Google and store their per-item feedback (_Like_, _Not in
 ## In scope
 
 - `@supabase/ssr` setup: server and browser clients, session refresh on every request, auth callback route, sign-out.
-- Login page with a single "Sign in with Google" button; app routes redirect to it when there is no session.
+- Login page with a "Sign in with Google" button; app routes redirect to it when there is no session. Local development also offers email/password sign-in against loopback Supabase only.
 - Supabase Auth Google provider for local development (`supabase/config.toml`, secrets via `env(...)`) and documented manual steps for the cloud project and Google Cloud OAuth client.
 - Migration: `feedback` table with RLS, grants, `updated_at` trigger, and `set_feedback` RPC function.
 - Server-side feedback actions: set (insert or replace, via the RPC) and clear (undo), using the signed-in user's session.
@@ -90,6 +90,7 @@ Let users sign in with Google and store their per-item feedback (_Like_, _Not in
 7. No service-role key or OpenAI key is imported into any client component or `NEXT_PUBLIC_` variable; no authorization decision relies on `getSession()` alone.
 8. After `supabase db reset`, `pnpm test:integration` passes against local Supabase with every integration test executed (0 skipped).
 9. `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
+10. In development with a loopback Supabase URL (`localhost`, `127.0.0.1`, or `[::1]`, HTTP/HTTPS), the login page also offers email/password sign-in for an existing local user. Successful sign-in establishes the normal cookie session, independently verifies claims, and redirects to `/`; sign-out returns to `/login`. Invalid credentials and connection failures show a generic error. Both the form and its server action are disabled outside development or against non-loopback, missing, or invalid Supabase URLs. No signup UI, auth bypass, service-role use, or hosted-provider changes are added. README documents creating a confirmed local account in Studio.
 
 ## Tasks
 
@@ -100,10 +101,11 @@ Let users sign in with Google and store their per-item feedback (_Like_, _Not in
 - [x] 5. `pnpm test:integration` script (fails if the environment is missing); schema assertions and two-user RLS integration tests (criteria 2, 3, 4, 6, 8).
 - [x] 6. `setFeedback` / `clearFeedback` server actions with verified identity, input validation, and unit tests (criterion 5).
 - [x] 7. Verify criterion 7; update design.md §6.3 if the implementation differs.
+- [x] 8. Add local-only email/password login, tests for the UI and server-side environment restrictions, and local account setup documentation (criteria 9 and 10; scope change approved 30 Oct 2026).
 
 ## Decisions
 
-- Google is the only sign-in method in the UI; email/password users exist only in local automated tests.
+- Google is the only production/hosted sign-in method in the UI. Email/password sign-in is also available for local development with loopback Supabase, using real Supabase authentication and existing RLS; local users are created in Studio, not through a signup UI (scope change approved 30 Oct 2026).
 - Undo deletes the row rather than storing history; the current state is all the recommender needs.
 - `item_id` uses `on delete restrict` to protect rated items from future pruning.
 - Feedback is written through the `set_feedback` RPC rather than a client-side upsert, so the column-level `update` grant can stay strict.

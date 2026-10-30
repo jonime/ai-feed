@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import Home from "../page";
 import Login from "../login/page";
-import { signOut } from "./actions";
+import { signInWithPassword, signOut } from "./actions";
 import { GET } from "./callback/route";
 
 const { auth, createClient, rpc } = vi.hoisted(() => ({
   auth: {
     getClaims: vi.fn(),
+    signInWithPassword: vi.fn(),
     signOut: vi.fn(),
     exchangeCodeForSession: vi.fn(),
   },
@@ -28,10 +29,12 @@ const verifiedClaims = {
 };
 
 beforeEach(() => {
+  vi.unstubAllEnvs();
   vi.resetAllMocks();
   createClient.mockResolvedValue({ auth, rpc });
   auth.getClaims.mockResolvedValue(verifiedClaims);
   auth.signOut.mockResolvedValue({ error: null });
+  auth.signInWithPassword.mockResolvedValue({ error: null });
   rpc.mockResolvedValue({ data: [], error: null });
   auth.exchangeCodeForSession.mockResolvedValue({ error: null });
 });
@@ -110,7 +113,7 @@ describe("signed-in page", () => {
 });
 
 describe("login page", () => {
-  it("offers Google as the only sign-in method", async () => {
+  it("offers Google as the only sign-in method outside local development", async () => {
     const html = renderToStaticMarkup(
       await Login({ searchParams: Promise.resolve({}) }),
     );
@@ -119,11 +122,150 @@ describe("login page", () => {
     expect(html).not.toContain('type="password"');
   });
 
+  it.each(["localhost", "127.0.0.1", "[::1]"])(
+    "also offers email/password in development with %s Supabase",
+    async (hostname) => {
+      vi.stubEnv("NODE_ENV", "development");
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", `http://${hostname}:55321`);
+      const html = renderToStaticMarkup(
+        await Login({ searchParams: Promise.resolve({}) }),
+      );
+      expect(html).toContain("Sign in with Google");
+      expect(html).toContain("Local sign-in");
+      expect(html).toContain('type="email"');
+      expect(html).toContain('type="password"');
+      expect(html).toContain('autoComplete="username"');
+      expect(html).toContain('autoComplete="current-password"');
+      expect(html).toContain("Sign in with email");
+      expect(html.match(/<button/g)).toHaveLength(2);
+    },
+  );
+
+  it.each([
+    ["production", "http://127.0.0.1:55321"],
+    ["development", "https://project.supabase.co"],
+    ["development", "http://localhost.evil.example:55321"],
+    ["development", "not a URL"],
+    ["development", ""],
+  ])("hides password login in %s with %s", async (mode, url) => {
+    vi.stubEnv("NODE_ENV", mode);
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", url);
+    const html = renderToStaticMarkup(
+      await Login({ searchParams: Promise.resolve({}) }),
+    );
+    expect(html).toContain("Sign in with Google");
+    expect(html).not.toContain('type="password"');
+    expect(html.match(/<button/g)).toHaveLength(1);
+  });
+
   it("displays a generic callback error rather than provider details", async () => {
     const html = renderToStaticMarkup(
       await Login({ searchParams: Promise.resolve({ error: "callback" }) }),
     );
     expect(html).toContain("Sign-in could not be completed. Please try again.");
+  });
+});
+
+describe("local password sign-in action", () => {
+  function credentials() {
+    const formData = new FormData();
+    formData.set("email", " user-a@example.com ");
+    formData.set("password", " local-password ");
+    return formData;
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:55321");
+  });
+
+  it.each(["localhost", "127.0.0.1", "[::1]"])(
+    "signs in against %s, verifies claims, then redirects home",
+    async (hostname) => {
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", `http://${hostname}:55321`);
+      await expect(signInWithPassword(null, credentials())).rejects.toThrow(
+        "REDIRECT:/",
+      );
+      expect(auth.signInWithPassword).toHaveBeenCalledExactlyOnceWith({
+        email: "user-a@example.com",
+        password: " local-password ",
+      });
+      expect(auth.getClaims).toHaveBeenCalledExactlyOnceWith();
+      expect(auth.signInWithPassword.mock.invocationCallOrder[0]).toBeLessThan(
+        auth.getClaims.mock.invocationCallOrder[0],
+      );
+    },
+  );
+
+  it.each([
+    ["production", "http://127.0.0.1:55321"],
+    ["test", "http://127.0.0.1:55321"],
+    ["development", "https://project.supabase.co"],
+    ["development", "http://localhost.evil.example:55321"],
+    ["development", "http://localhost@evil.example:55321"],
+    ["development", "ftp://localhost:55321"],
+    ["development", "not a URL"],
+    ["development", ""],
+  ])("rejects %s with %s before creating a client", async (mode, url) => {
+    vi.stubEnv("NODE_ENV", mode);
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", url);
+    expect(await signInWithPassword(null, credentials())).toBe(
+      "Password sign-in is unavailable.",
+    );
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["email", ""],
+    ["email", "invalid"],
+    ["email", `${"a".repeat(255)}@example.com`],
+    ["password", ""],
+    ["password", "a".repeat(4097)],
+    ["email", new File(["email"], "email.txt")],
+    ["password", new File(["password"], "password.txt")],
+  ])("rejects invalid %s without contacting auth", async (field, value) => {
+    const formData = credentials();
+    formData.set(field, value);
+    expect(await signInWithPassword(null, formData)).toBe(
+      "Enter a valid email address and password.",
+    );
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing credentials", async () => {
+    expect(await signInWithPassword(null, new FormData())).toBe(
+      "Enter a valid email address and password.",
+    );
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it("does not expose provider errors or verify a failed sign-in", async () => {
+    auth.signInWithPassword.mockResolvedValueOnce({
+      error: new Error("Private provider details"),
+    });
+    expect(await signInWithPassword(null, credentials())).toBe(
+      "Sign-in failed. Check your email and password and try again.",
+    );
+    expect(auth.getClaims).not.toHaveBeenCalled();
+  });
+
+  it("handles auth connection failures without exposing details", async () => {
+    auth.signInWithPassword.mockRejectedValueOnce(new Error("Private details"));
+    expect(await signInWithPassword(null, credentials())).toBe(
+      "Sign-in failed. Check your email and password and try again.",
+    );
+  });
+
+  it.each([
+    { data: null, error: null },
+    { data: { claims: {} }, error: null },
+    { ...verifiedClaims, error: new Error("Invalid signature") },
+  ])("clears the session when claims cannot be verified", async (result) => {
+    auth.getClaims.mockResolvedValueOnce(result);
+    expect(await signInWithPassword(null, credentials())).toBe(
+      "Sign-in failed. Check your email and password and try again.",
+    );
+    expect(auth.signOut).toHaveBeenCalledExactlyOnceWith({ scope: "local" });
   });
 });
 

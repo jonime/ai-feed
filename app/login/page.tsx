@@ -1,3 +1,5 @@
+import { isLocalPasswordLoginEnabled } from "../../lib/supabase/local-password-login";
+import { PasswordSignInForm } from "./password-sign-in-form";
 import { SignInButton } from "./sign-in-button";
 
 export const instant = false;
@@ -20,6 +22,7 @@ export default async function Login({
           </p>
         )}
         <SignInButton />
+        {isLocalPasswordLoginEnabled() && <PasswordSignInForm />}
       </section>
     </main>
   );
