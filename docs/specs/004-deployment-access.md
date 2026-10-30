@@ -70,11 +70,12 @@ Make the application available on the internet (Vercel + hosted Supabase) for in
 **CI and deployment**
 
 - `.github/workflows/ci.yml` on push and pull request:
+  - Skip the workflow when all changed paths match `docs/**`, `**/*.md`, `.agents/**`, `.github/instructions/**`, `.github/prompts/**`, `.github/agents/**`, or `skills-lock.json`. Workflow files and unknown paths still trigger CI. Before enabling required checks, replace trigger-level filtering with job-level filtering so skipped workflows do not leave required checks pending.
   - **checks** job: `pnpm install --frozen-lockfile`, `lint`, `typecheck`, `test`; also `build` except on pushes to `main`, where the Vercel build is the build check.
   - **integration** job: Supabase CLI, `supabase start`, `pnpm test:integration` (fails if any test is skipped). The fresh GitHub-hosted runner has no existing database; start already applies migrations and seeds, so no reset is needed.
   - **vercel-build** job (only on pushes to `main`, parallel with checks and integration): `vercel deploy --prod --skip-domain --yes` builds remotely with production settings without assigning production domains; exports the exact deployment URL.
   - **deploy** job (only on pushes to `main`, needs all three): resolves the exact deployment URL through Vercel's API, verifies the project ID, production target, and ready state, then requests promotion through `POST /v10/projects/{projectId}/promote/{deploymentId}` with the explicit team ID. This avoids the CLI's failing user lookup and does not rebuild. HTTP or validation failures fail the job; a successful response confirms the promotion request, which Vercel may process asynchronously. Both Vercel jobs use `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repository secrets.
-  - Workflow concurrency cancels older runs for the same ref; immediately before promotion, the deploy job also checks that its commit is still the head of `main` and skips stale commits.
+  - Workflow concurrency cancels older runs for the same ref; immediately before promotion, the deploy job also checks that its commit is still the head of `main` and skips stale commits. An ignored-only push during a deployment can also prevent promotion, leaving the previous production version live until the next code deployment.
 - Vercel's own Git deployments are disabled (`vercel.json`: `git.deploymentEnabled: false`), so the production domain changes only after CI passes. Staged production builds have unique deployment URLs; deployment protection should restrict access to these URLs.
 - Workflow permissions are `contents: read`; third-party actions use pinned major versions as in the existing workflows.
 
@@ -119,6 +120,7 @@ Each criterion belongs to one task.
 8. **Task 8 — documentation**
    1. README has a deployment section: allowlist commands, hosted Auth checklist, Vercel and GitHub secrets (names only), migration flow through the Supabase GitHub integration, and how to roll back. design.md §5.1 and §6 describe the allowlist.
 9. **Every task:** `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass; tasks touching the database also pass `pnpm test:integration` with 0 skipped.
+10. **Task 9 — non-code CI filtering:** push and pull request triggers use the same non-code exclusions; mixed code and documentation changes, workflow changes, and unknown paths still run CI. The workflow passes `actionlint`; deployment logic stays unchanged.
 
 ## Tasks
 
@@ -130,6 +132,7 @@ Each criterion belongs to one task.
 - [x] 6. Hosted Supabase Auth configuration, verify migrations applied by the GitHub integration, Vercel project and secrets (criterion 6).
 - [x] 7. Deploy job, `vercel.json`, security headers; verify production end to end (criterion 7).
 - [x] 8. README deployment section; update design.md §5.1 and §6 (criterion 8).
+- [x] 9. Skip non-code-only CI runs using trigger path exclusions (criterion 10).
 
 ## Decisions
 
