@@ -8,6 +8,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import Image from "next/image";
 import {
   CheckIcon,
   CircleAlertIcon,
@@ -220,12 +221,15 @@ function FeedCard({
           )}
         >
           {thumbnailUrl && (
-            <img
+            <Image
               className="aspect-video w-full object-cover"
               src={thumbnailUrl}
+              width={1200}
+              height={675}
               alt=""
               loading="lazy"
               referrerPolicy="no-referrer"
+              unoptimized
             />
           )}
           <CardHeader>

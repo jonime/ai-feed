@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CircleAlertIcon, HeartIcon, HeartOffIcon } from "lucide-react";
@@ -102,12 +103,15 @@ export default function LikedList({
               )}
             >
               {thumbnailUrl && (
-                <img
+                <Image
                   className="aspect-video w-full object-cover"
                   src={thumbnailUrl}
+                  width={1200}
+                  height={675}
                   alt=""
                   loading="lazy"
                   referrerPolicy="no-referrer"
+                  unoptimized
                 />
               )}
               <CardHeader>
