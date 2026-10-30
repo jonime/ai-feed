@@ -126,9 +126,9 @@ Each criterion belongs to one task.
 - [x] 2. Integration tests for allowlist enforcement; update existing tests to allowlist their users (criterion 2).
 - [x] 3. `pnpm allowlist` admin script with unit tests (criterion 3).
 - [x] 4. `/no-access` page and redirect (criterion 4).
-- [ ] 5. `ci.yml` with checks and integration jobs (criterion 5).
+- [x] 5. `ci.yml` with checks and integration jobs (criterion 5).
 - [x] 6. Hosted Supabase Auth configuration, verify migrations applied by the GitHub integration, Vercel project and secrets (criterion 6).
-- [ ] 7. Deploy job, `vercel.json`, security headers; verify production end to end (criterion 7).
+- [x] 7. Deploy job, `vercel.json`, security headers; verify production end to end (criterion 7).
 - [x] 8. README deployment section; update design.md §5.1 and §6 (criterion 8).
 
 ## Decisions
