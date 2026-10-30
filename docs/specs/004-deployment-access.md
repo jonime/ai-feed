@@ -77,7 +77,7 @@ Make the application available on the internet (Vercel + hosted Supabase) for in
 - `.github/workflows/ci.yml` on push and pull request:
   - Skip the workflow when all changed paths match `docs/**`, `**/*.md`, `.agents/**`, `.github/instructions/**`, `.github/prompts/**`, `.github/agents/**`, or `skills-lock.json`. Workflow files and unknown paths still trigger CI. Before enabling required checks, replace trigger-level filtering with job-level filtering so skipped workflows do not leave required checks pending.
   - **checks** job: `pnpm install --frozen-lockfile`, `lint`, `typecheck`, `test`; also `build` except on pushes to `main`, where the Vercel build is the build check.
-  - **integration** job: Supabase CLI, `supabase start`, `pnpm test:integration` (fails if any test is skipped). The fresh GitHub-hosted runner has no existing database; start already applies migrations and seeds, so no reset is needed.
+  - **integration** job: Supabase CLI, `supabase start` with unused containers excluded, `pnpm test:integration` (fails if any test is skipped). Keep PostgreSQL, Auth, PostgREST, and Kong. Disable Storage and Realtime through CI-only environment overrides as well as excluding their containers, because `-x` alone does not skip their one-shot database initialization jobs. Disable local SMTP and Google OAuth; tests use confirmed email/password users. Suppress startup stdout so local API keys are not printed. The fresh GitHub-hosted runner has no existing database; start already applies migrations and seeds, so no reset is needed.
   - **vercel-build** job (only on pushes to `main`, parallel with checks and integration): `vercel deploy --prod --skip-domain --yes` builds remotely with production settings without assigning production domains; exports the exact deployment URL.
   - **deploy** job (only on pushes to `main`, needs all three): resolves the exact deployment URL through Vercel's API, verifies the project ID, production target, and ready state, then requests promotion through `POST /v10/projects/{projectId}/promote/{deploymentId}` with the explicit team ID. This avoids the CLI's failing user lookup and does not rebuild. HTTP or validation failures fail the job; a successful response confirms the promotion request, which Vercel may process asynchronously. Both Vercel jobs use `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repository secrets.
   - Workflow concurrency cancels older runs for the same ref; immediately before promotion, the deploy job also checks that its commit is still the head of `main` and skips stale commits. An ignored-only push during a deployment can also prevent promotion, leaving the previous production version live until the next code deployment.
@@ -126,6 +126,7 @@ Each criterion belongs to one task.
    1. README has a deployment section: allowlist commands, hosted Auth checklist, Vercel and GitHub secrets (names only), migration flow through the Supabase GitHub integration, and how to roll back. design.md §5.1 and §6 describe the allowlist.
 9. **Every task:** `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass; tasks touching the database also pass `pnpm test:integration` with 0 skipped.
 10. **Task 9 — non-code CI filtering:** push and pull request triggers use the same non-code exclusions; mixed code and documentation changes, workflow changes, and unknown paths still run CI. The workflow passes `actionlint`; deployment logic stays unchanged.
+11. **Task 10 — minimal CI Supabase stack:** only PostgreSQL, Auth, PostgREST, and Kong run; unused Storage and Realtime initialization jobs are disabled. The workflow passes `actionlint`, all four integration suites pass with 0 skipped against a fresh minimal local stack, and local development configuration and deployment gates stay unchanged. Compare startup and integration job durations with the full-stack baseline after CI runs; do not assume a speedup before measuring it.
 
 ## Tasks
 
@@ -138,6 +139,9 @@ Each criterion belongs to one task.
 - [x] 7. Deploy job, `vercel.json`, security headers; verify production end to end (criterion 7).
 - [x] 8. README deployment section; update design.md §5.1 and §6 (criterion 8).
 - [x] 9. Skip non-code-only CI runs using trigger path exclusions (criterion 10).
+- [x] 10. Reduce CI Supabase to the services required by the existing integration tests (criterion 11).
+
+Task 10 validation: `actionlint`, `pnpm lint`, `pnpm typecheck`, and `pnpm test` passed (204 unit tests; two existing image lint warnings). All four integration suites passed on a fresh disposable minimal Supabase stack (32 tests, 0 skipped); exactly PostgreSQL, Auth, PostgREST, and Kong were running. The disposable project used separate API/database ports, so the suites ran directly through Vitest rather than through the repository runner's fixed-port guard. Existing development stacks were left running. GitHub Actions timing comparison remains pending.
 
 ## Decisions
 

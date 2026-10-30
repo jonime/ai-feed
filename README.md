@@ -53,6 +53,8 @@ pnpm test:integration
 
 `supabase db reset` deletes local database data and auth users before reapplying migrations. The integration command does not reset the database; it verifies that the local Supabase API and, when present, `.env.local` target this project's local ports, obtains test keys from the local CLI process without displaying them, and fails if the tests are skipped. It never targets a linked or hosted project. The ordinary `pnpm test` command remains hermetic and skips the database-backed tests.
 
+CI starts only PostgreSQL, Auth, PostgREST, and Kong. The integration job excludes unused containers and disables Storage and Realtime through environment overrides so their one-shot database initialization jobs are also skipped. It disables local SMTP and Google OAuth because tests create confirmed email/password users through the local Auth admin API. Fresh startup applies all migrations, including the source seed migration; no additional reset is needed. The full local development stack is unchanged.
+
 ## Google sign-in setup
 
 This configures OAuth for spec 002's Google login page and application callback route. The app runs locally at `http://localhost:3001`.
