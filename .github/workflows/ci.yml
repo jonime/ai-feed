@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-24.04
@@ -39,6 +43,7 @@ jobs:
         run: pnpm test
 
       - name: Build
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         run: pnpm build
 
   integration:
@@ -70,17 +75,15 @@ jobs:
       - name: Start local Supabase
         run: supabase start
 
-      - name: Reset local database
-        run: supabase db reset
-
       - name: Run integration tests
         run: pnpm test:integration
 
-  deploy:
+  vercel-build:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [checks, integration]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      deployment-url: ${{ steps.build.outputs.deployment-url }}
     permissions:
       contents: read
     env:
@@ -102,11 +105,44 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - name: Pull production Vercel environment
-        run: pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build on Vercel without promoting
+        id: build
+        run: |
+          deployment_url=$(pnpm dlx vercel@latest deploy --prod --skip-domain --yes --token="$VERCEL_TOKEN")
+          echo "deployment-url=$deployment_url" >> "$GITHUB_OUTPUT"
 
-      - name: Build production deployment
-        run: pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [checks, integration, vercel-build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      DEPLOYMENT_URL: ${{ needs.vercel-build.outputs.deployment-url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
 
-      - name: Deploy production build
-        run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 12.14.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Promote verified deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [[ "$main_sha" != "$GITHUB_SHA" ]]; then
+            echo "Skipping promotion: main has a newer commit."
+            exit 0
+          fi
+          pnpm dlx vercel@latest promote "$DEPLOYMENT_URL" --token="$VERCEL_TOKEN"

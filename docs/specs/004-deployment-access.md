@@ -23,7 +23,7 @@ Make the application available on the internet (Vercel + hosted Supabase) for in
 - Admin script to add, remove, and list allowed emails.
 - _No access_ page for signed-in users who are not on the allowlist.
 - CI workflow: lint, typecheck, unit tests, build, and database integration tests on local Supabase in GitHub Actions.
-- Production deployment to Vercel from GitHub Actions, only after CI passes on `main`.
+- Production build on Vercel triggered from GitHub Actions in parallel with CI on `main`; promotion only after CI passes.
 - Hosted Supabase Auth configuration (Google only, redirect URLs) and a documented checklist.
 - Basic security response headers.
 
@@ -70,10 +70,12 @@ Make the application available on the internet (Vercel + hosted Supabase) for in
 **CI and deployment**
 
 - `.github/workflows/ci.yml` on push and pull request:
-  - **checks** job: `pnpm install --frozen-lockfile`, `lint`, `typecheck`, `test`, `build`.
-  - **integration** job: Supabase CLI, `supabase start`, `supabase db reset`, `pnpm test:integration` (fails if any test is skipped).
-  - **deploy** job (only on `main`, needs both): `vercel pull --environment=production`, `vercel build --prod`, `vercel deploy --prebuilt --prod`, using `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repository secrets.
-- Vercel's own Git deployments are disabled (`vercel.json`: `git.deploymentEnabled: false`), so nothing reaches production without passing CI.
+  - **checks** job: `pnpm install --frozen-lockfile`, `lint`, `typecheck`, `test`; also `build` except on pushes to `main`, where the Vercel build is the build check.
+  - **integration** job: Supabase CLI, `supabase start`, `pnpm test:integration` (fails if any test is skipped). The fresh GitHub-hosted runner has no existing database; start already applies migrations and seeds, so no reset is needed.
+  - **vercel-build** job (only on pushes to `main`, parallel with checks and integration): `vercel deploy --prod --skip-domain --yes` builds remotely with production settings without assigning production domains; exports the exact deployment URL.
+  - **deploy** job (only on pushes to `main`, needs all three): `vercel promote <deployment-url>` assigns production domains to that verified build without rebuilding. Both Vercel jobs use `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repository secrets.
+  - Workflow concurrency cancels older runs for the same ref; immediately before promotion, the deploy job also checks that its commit is still the head of `main` and skips stale commits.
+- Vercel's own Git deployments are disabled (`vercel.json`: `git.deploymentEnabled: false`), so the production domain changes only after CI passes. Staged production builds have unique deployment URLs; deployment protection should restrict access to these URLs.
 - Workflow permissions are `contents: read`; third-party actions use pinned major versions as in the existing workflows.
 
 **Migrations**
@@ -112,7 +114,7 @@ Each criterion belongs to one task.
    2. The Supabase GitHub integration has applied all migrations up to this spec to the hosted project (checked in the dashboard's migration history).
    3. Vercel has only the two public environment variables, and its Git deployments are disabled.
 7. **Task 7 — production deployment**
-   1. A push to `main` deploys to production only after the checks and integration jobs pass; a failing check blocks the deploy.
+   1. A push to `main` builds remotely on Vercel in parallel with CI and promotes that exact build only after checks, integration, and the Vercel build pass; a failing check blocks promotion. Superseded runs are canceled and stale commits are skipped before promotion.
    2. On the production URL, an allowlisted Google account signs in and sees the personalized feed; feedback works; production responses include the security headers; the local password login form is not shown.
 8. **Task 8 — documentation**
    1. README has a deployment section: allowlist commands, hosted Auth checklist, Vercel and GitHub secrets (names only), migration flow through the Supabase GitHub integration, and how to roll back. design.md §5.1 and §6 describe the allowlist.
@@ -134,7 +136,7 @@ Each criterion belongs to one task.
 - Access is enforced in the database (RLS + `is_allowed()`), not only in the app; the _No access_ page is user experience.
 - The allowlist is keyed by lowercased email from the verified JWT.
 - Vercel stores no secret keys; the deployed app uses only the public Supabase URL and anon key.
-- Production deploys only from GitHub Actions after CI; Vercel Git deployments and previews are disabled.
+- Production builds run remotely on Vercel in parallel with CI, triggered by GitHub Actions; production domains are promoted only after CI passes. Vercel Git deployments and previews are disabled.
 - Per-user LLM limits move to spec 007, where the first LLM-triggering user action is built.
 - Migrations are applied by the Supabase GitHub integration, not by the deploy job; migrations stay backward compatible with the deployed app.
 - The default `*.vercel.app` domain is used.

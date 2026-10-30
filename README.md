@@ -161,7 +161,7 @@ Configure only these public variables in the Vercel production environment:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-Do not configure `SUPABASE_SERVICE_ROLE_KEY` or `OPENAI_API_KEY` in Vercel. Disable Vercel Git deployments and preview deployments; production deploys only from the GitHub Actions workflow after both the checks and database integration jobs pass.
+Do not configure `SUPABASE_SERVICE_ROLE_KEY` or `OPENAI_API_KEY` in Vercel. Disable Vercel Git deployments and preview deployments. On pushes to `main`, GitHub Actions starts a remote Vercel production build in parallel with checks and database integration tests, using `--skip-domain` to keep the current production domain unchanged. Only after all three jobs pass does Actions promote that exact deployment, without rebuilding. Other pushes and pull requests keep the local CI build. Superseded workflow runs are canceled, and promotion skips commits that are no longer the head of `main`. Enable deployment protection for staged deployment URLs, which exist before promotion and use production settings.
 
 Add these repository secrets in GitHub Actions; names only are shown here:
 
