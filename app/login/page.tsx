@@ -37,10 +37,7 @@ export default async function Login({
             <CardTitle className="text-xl">
               <h1 id="login-heading">Sign in</h1>
             </CardTitle>
-            <CardDescription>
-              Your personal feed of Finnish and English news, articles, and
-              videos.
-            </CardDescription>
+            <CardDescription>The web, picked for you.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             {params.error === "callback" && (
