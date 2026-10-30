@@ -51,7 +51,7 @@ supabase db reset
 pnpm test:integration
 ```
 
-`supabase db reset` deletes local database data and auth users before reapplying migrations. The integration command does not reset the database; it verifies that the local Supabase API and `.env.local` target this project's local ports, obtains test keys from the local CLI process without displaying them, and fails if the tests are skipped. It never targets a linked or hosted project. The ordinary `pnpm test` command remains hermetic and skips the database-backed tests.
+`supabase db reset` deletes local database data and auth users before reapplying migrations. The integration command does not reset the database; it verifies that the local Supabase API and, when present, `.env.local` target this project's local ports, obtains test keys from the local CLI process without displaying them, and fails if the tests are skipped. It never targets a linked or hosted project. The ordinary `pnpm test` command remains hermetic and skips the database-backed tests.
 
 ## Google sign-in setup
 

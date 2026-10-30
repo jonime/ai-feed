@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -45,14 +45,16 @@ assert.ok(
   "Local Supabase service-role key is unavailable.",
 );
 
-const envFile = readFileSync(".env.local", "utf8");
-const appUrl = envFile.match(/^NEXT_PUBLIC_SUPABASE_URL=(.*)$/m)?.[1]?.trim();
-if (appUrl) {
-  assert.equal(
-    appUrl,
-    localApiUrl,
-    "The .env.local Supabase URL is not the local project; refusing to run integration tests.",
-  );
+if (existsSync(".env.local")) {
+  const envFile = readFileSync(".env.local", "utf8");
+  const appUrl = envFile.match(/^NEXT_PUBLIC_SUPABASE_URL=(.*)$/m)?.[1]?.trim();
+  if (appUrl) {
+    assert.equal(
+      appUrl,
+      localApiUrl,
+      "The .env.local Supabase URL is not the local project; refusing to run integration tests.",
+    );
+  }
 }
 
 const reportDirectory = mkdtempSync(join(tmpdir(), "ai-feed-integration-"));
