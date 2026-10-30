@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
 import Home from "../page";
 import Login from "../login/page";
+import { PasswordSignInForm } from "../login/password-sign-in-form";
 import { signInWithPassword, signOut } from "./actions";
 import { GET } from "./callback/route";
 
@@ -132,14 +134,18 @@ describe("login page", () => {
       );
       expect(html).toContain("Sign in with Google");
       expect(html).toContain("Local sign-in");
-      expect(html).toContain('type="email"');
-      expect(html).toContain('type="password"');
-      expect(html).toContain('autoComplete="username"');
-      expect(html).toContain('autoComplete="current-password"');
-      expect(html).toContain("Sign in with email");
       expect(html.match(/<button/g)).toHaveLength(2);
     },
   );
+
+  it("renders the local email/password form fields", () => {
+    const html = renderToStaticMarkup(createElement(PasswordSignInForm));
+    expect(html).toContain('type="email"');
+    expect(html).toContain('type="password"');
+    expect(html).toContain('autoComplete="username"');
+    expect(html).toContain('autoComplete="current-password"');
+    expect(html).toContain("Sign in with email");
+  });
 
   it.each([
     ["production", "http://127.0.0.1:55321"],

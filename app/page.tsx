@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { CircleAlertIcon, RefreshCwIcon } from "lucide-react";
+import { AppHeader } from "@/components/app-header";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { createClient } from "../lib/supabase/server";
 import FeedList from "./feed/feed-list";
 import type { FeedItem } from "../lib/feed-ui";
-import { signOut } from "./auth/actions";
 
 export const instant = false;
 
@@ -27,47 +29,42 @@ export default async function Home({
   const params = await searchParams;
 
   return (
-    <main className="app-shell">
-      <header className="account-header">
-        <div>
-          <h1>AI Feed</h1>
-          <p className="account-email">{email}</p>
-          <nav className="account-nav" aria-label="Main navigation">
-            <span aria-current="page">Feed</span>
-            <Link href="/liked">Liked</Link>
-          </nav>
-        </div>
-        <form action={signOut}>
-          <button className="button button-secondary" type="submit">
-            Sign out
-          </button>
-        </form>
-      </header>
-      {params.error === "sign-out" && (
-        <p className="auth-error" role="alert">
-          Sign-out failed. Please try again.
-        </p>
-      )}
-      <section className="feed-section" aria-labelledby="feed-heading">
-        <div className="feed-heading-row">
-          <h2 id="feed-heading">Your feed</h2>
-          <form action="/" method="get">
-            <button
-              className="button button-secondary refresh-button"
-              type="submit"
-            >
-              Refresh feed
-            </button>
-          </form>
-        </div>
-        {feedError ? (
-          <p className="auth-error" role="alert">
-            The feed could not be loaded. Please try again.
-          </p>
-        ) : (
-          <FeedList initialItems={feedItems} renderedAt={renderedAt} />
+    <>
+      <AppHeader email={email} current="/" />
+      <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6">
+        {params.error === "sign-out" && (
+          <Alert variant="destructive">
+            <CircleAlertIcon aria-hidden="true" />
+            <AlertTitle>Sign-out failed. Please try again.</AlertTitle>
+          </Alert>
         )}
-      </section>
-    </main>
+        <section className="flex flex-col gap-4" aria-labelledby="feed-heading">
+          <div className="flex items-center justify-between gap-4">
+            <h1
+              id="feed-heading"
+              className="text-2xl font-semibold tracking-tight"
+            >
+              Your feed
+            </h1>
+            <form action="/" method="get">
+              <Button variant="outline" type="submit">
+                <RefreshCwIcon data-icon="inline-start" aria-hidden="true" />
+                Refresh feed
+              </Button>
+            </form>
+          </div>
+          {feedError ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon aria-hidden="true" />
+              <AlertTitle>
+                The feed could not be loaded. Please try again.
+              </AlertTitle>
+            </Alert>
+          ) : (
+            <FeedList initialItems={feedItems} renderedAt={renderedAt} />
+          )}
+        </section>
+      </main>
+    </>
   );
 }

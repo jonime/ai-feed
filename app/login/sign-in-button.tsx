@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { createClient } from "../../lib/supabase/client";
 
 export function SignInButton() {
@@ -23,18 +25,20 @@ export function SignInButton() {
   }
 
   return (
-    <div>
-      <button
-        className="button"
+    <div className="flex flex-col gap-2">
+      <Button
+        size="lg"
+        className="w-full"
         type="button"
         onClick={signIn}
         disabled={pending}
         aria-busy={pending}
       >
+        {pending && <Spinner data-icon="inline-start" />}
         {pending ? "Connecting to Google..." : "Sign in with Google"}
-      </button>
+      </Button>
       {error && (
-        <p className="auth-error" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
       )}

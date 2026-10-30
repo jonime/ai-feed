@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CircleAlertIcon } from "lucide-react";
+import { AppHeader } from "@/components/app-header";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 import { createClient } from "../../lib/supabase/server";
 import type { LikedFeedItem } from "../../lib/feed-ui";
-import { signOut } from "../auth/actions";
 import LikedList from "./liked-list";
 
 export const instant = false;
@@ -63,34 +64,26 @@ export default async function LikedPage() {
   const renderedAt = new Date().toISOString();
 
   return (
-    <main className="app-shell">
-      <header className="account-header">
-        <div>
-          <h1>AI Feed</h1>
-          <p className="account-email">{email}</p>
-          <nav className="account-nav" aria-label="Main navigation">
-            <Link href="/">Feed</Link>
-            <span aria-current="page">Liked</span>
-          </nav>
-        </div>
-        <form action={signOut}>
-          <button className="button button-secondary" type="submit">
-            Sign out
-          </button>
-        </form>
-      </header>
-      <section className="feed-section" aria-labelledby="liked-heading">
-        <h2 id="liked-heading" className="liked-heading">
+    <>
+      <AppHeader email={email} current="/liked" />
+      <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6">
+        <h1
+          id="liked-heading"
+          className="text-2xl font-semibold tracking-tight"
+        >
           Liked items
-        </h2>
+        </h1>
         {error ? (
-          <p className="auth-error" role="alert">
-            Liked items could not be loaded. Please try again.
-          </p>
+          <Alert variant="destructive">
+            <CircleAlertIcon aria-hidden="true" />
+            <AlertTitle>
+              Liked items could not be loaded. Please try again.
+            </AlertTitle>
+          </Alert>
         ) : (
           <LikedList initialItems={likedItems} renderedAt={renderedAt} />
         )}
-      </section>
-    </main>
+      </main>
+    </>
   );
 }

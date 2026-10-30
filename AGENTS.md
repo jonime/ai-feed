@@ -25,6 +25,16 @@ AI-powered personal content feed: ingests Finnish and English RSS/Atom/YouTube f
 - OpenAI: `text-embedding-3-small` (512 dimensions); small GPT model for LLM tasks
 - Scheduled jobs: TypeScript scripts run by GitHub Actions
 - Tests: Vitest
+- UI: shadcn/ui (Base UI, `base-nova` style, lucide icons) + Tailwind CSS v4
+
+## UI (shadcn/ui)
+
+- Before UI work, follow the project skill [.agents/skills/shadcn/SKILL.md](.agents/skills/shadcn/SKILL.md) and its `rules/` files. The shadcn MCP server is configured in `.vscode/mcp.json`.
+- Run the CLI with `pnpm dlx shadcn@latest` (`info`, `docs <component>`, `search`, `add <component>`). Check `components/ui/` before adding; fetch the `docs` URLs before using a component you have not used here.
+- Components live in `components/ui/` as owned source; theme tokens live only in `app/globals.css`. Use semantic tokens (`bg-primary`, `text-muted-foreground`), never raw palette colors or manual `dark:` overrides.
+- Compose existing components (`Card`, `Badge`, `Alert`, `Empty`, `Field`, `ToggleGroup`, `Skeleton`, `Separator`) before writing custom markup. Use `flex`/`gap-*`, not `space-*`.
+- This project uses Base UI: custom triggers use the `render` prop, not `asChild`. Toasts use the Base UI `toast` component.
+- Never use `--overwrite` on existing components without asking; preview with `--dry-run`/`--diff`.
 
 ## Security rules (non-negotiable)
 
